@@ -27,7 +27,7 @@ Using the project
 * Create a .env file and provide the path to the project.<br>
 
 <h4>Prerequsites</h4>
-Install simglucose v0.2.1: https://github.com/jxx123/simglucose which is an open source version of the UVA/Padova 2008 simulator approved by the FDA (Recommended to install using <code>pip install -e .</code>). The simulation environment and scenarios used in this project are extended from the original environment.
+Install [simglucose v0.2.1](https://github.com/jxx123/simglucose) which is an open source version of the UVA/Padova 2008 simulator approved by the FDA (Recommended to install using <code>pip install -e .</code>). The simulation environment and scenarios used in this project are extended from the original environment.
 
 <h4>Quick Start</h4>
 
@@ -52,23 +52,14 @@ python run_RL_agent.py --agent g2p2c --folder_id test --patient_id 0 --return_ty
 
 
 <h4>Running Experiments</h4>
-* Setup the simulation environment and scenario. <br>
+
+* **Setup simulation environment and scenario**.\
 The parameters of the environment such as the meal protocol, sensor / pump hardware can be setup using the <code>/utils/options.py</code> file.
-<br>
 
-* **Run experiment**<br>
-Set paramteres of the target agent in respective file e.g. <code>/agents/ppo/parameters.py</code><br>
-Run experiment <code>python3 start.py --agent ppo</code>
-<br>
-
-* **Computational Requirements**<br>
-Computation requirements vary based on the type of Agent (PPO, G2PC, G2P2C), training interactions, and software versions.
-<br>
-On a NVIDIA 3090(24GB) GPU with CUDA Version 11.4, Driver Version: 470.103.01, pytorch 1.8.2+cu111, python 3.8.10: 12 Experiments can be packed in a single run. 4.5GB CPU Memory required for each experiment. One experiment is defined as: glucose control learning for 1 subject, 1 seed. 
-<br>
-On NCI computational requirements for 1M interactions (python3/3.9.2 cuda/11.2.2)<br>
-**PPO**: Walltime-approx 12hrs, nCPU-12, 1 GPU, Memory 8GB <br>
-**G2P2C**: Walltime-approx 28hrs, nCPU-12, 1 GPU, Memory 8GB<br>
+* **Setup agent parameters**\
+Parameters of target agents can be setup using the <code>parameters.py</code> file located in the respective project folder e.g. <code>/agents/ppo/parameters.py</code>
+* **Run experiment**\
+The required experiments can be run as highlighted in the **Quick Start** section.
 
 <h4>Project Folder Structure</h4>
 <pre>
@@ -87,7 +78,7 @@ sys_control
 |- visualiser: to visualise / debug agent training using jupyter notebooks
 </pre>
 
-The output of an experiment will be saved in <code>/results</code> under the given folder name.<br>
+The output of an experiment will be saved in <code>/results</code> under the user-specified folder name.<br>
 
 <pre>
 Root (Folder Name i.e. Experiment Name)
@@ -106,10 +97,9 @@ Root (Folder Name i.e. Experiment Name)
 
 <h4>Visualizing Results</h4>
 A plotting library is developed to plot the glucose, insulin, and meal fluctuations of a simulation. Jupyter notebooks are used for the visualisations where ready made scripts available to analyse the results on individual / cohort levels and conduct statistical tests.
-* Jupyter notebook scripts have been included to visualize the results
-* individual_analyzer: plot learning curves for an individual T1D subject (3 random seeds).
-* cohort_analyzer: plot aggregate results for a given T1D cohort / protocol / agent; stats / metrics for the cohort. 
-* compare_agents: compare agents (e.g., ppo, g2p2c) in an individual T1D subject level.
+* **individual_analyzer.ipynb**: plot learning curves for an individual T1D subject (3 random seeds).
+* **cohort_analyzer.ipynb**: plot aggregate results for a given T1D cohort / protocol / agent; stats / metrics for the cohort. 
+* **compare_agents.ipynb**: compare agents (e.g., ppo, g2p2c) in an individual T1D subject level.
 
 ![Artificial Pancreas System](img/glucose.png)
 
