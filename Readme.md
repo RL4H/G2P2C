@@ -24,7 +24,8 @@ Using the project
 
 <h4>Installation</h4>
 
-* Clone the repository <code>git clone git@github.com:chirathyh/G2P2C.git</code>.<br>
+* Clone the repository: <code>git clone git@github.com:chirathyh/G2P2C.git</code>.<br>
+* Move inside the project folder: <code>cd G2P2C</code>
 * Create a .env file and provide the path to the project.<br>
 
 <h4>Prerequsites</h4>
@@ -32,19 +33,25 @@ Install [simglucose v0.2.1](https://github.com/jxx123/simglucose) which is an op
 
 <h4>Quick Start</h4>
 
-Running a PPO algorithm for glucose control.
+Running a **Proximal Policy Optimisation (PPO)** algorithm for glucose control. More information related to state-action space, reward formulations: [Paper](https://ieeexplore.ieee.org/abstract/document/9871054) .
 ```
 cd experiments 
 python run_RL_agent.py --agent ppo --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --seed 3 --debug 0
 ```
 
-Running a clinical treatment strategy based on basal-bolus control.
+Running a clinical treatment strategy based on **basal-bolus (BB)** control. More info: [Paper](https://ieeexplore.ieee.org/abstract/document/9871054) .
 ```
 cd experiments
 python run_clinical_treatment.py --folder_id temp --carb_estimation_method real
 ```
 
-Running the G2P2C (Glucose Control by Glucose Prediction & Planning)  algorithm.
+Analyze non-linear action-space formulations. Evaluate different action space formulations by specifying <code>--action_type</code> : <code>linear, exponential, proportional quadratic, quadratic</code>. More info: [Paper](https://ieeexplore.ieee.org/abstract/document/9871054) . 
+```
+cd experiments
+python run_RL_agent.py --agent ppo --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --seed 3 --debug 0
+```
+
+Running the G2P2C (Glucose Control by Glucose Prediction and Planning)  algorithm. More info: [Paper](https://ieeexplore.ieee.org/abstract/document/9871054) .
 ```
 cd experiments
 python run_RL_agent.py --agent g2p2c --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --seed 3 --debug 0
