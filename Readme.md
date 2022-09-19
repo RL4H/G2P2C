@@ -55,7 +55,6 @@ python run_RL_agent.py --agent g2p2c --folder_id test --patient_id 0 --return_ty
 
 * **Setup simulation environment and scenario**.\
 The parameters of the environment such as the meal protocol, sensor / pump hardware can be setup using the <code>/utils/options.py</code> file.
-
 * **Setup agent parameters**\
 Parameters of target agents can be setup using the <code>parameters.py</code> file located in the respective project folder e.g. <code>/agents/ppo/parameters.py</code>
 * **Run experiment**\
@@ -96,7 +95,9 @@ Root (Folder Name i.e. Experiment Name)
 </pre>
 
 <h4>Visualizing Results</h4>
+
 A plotting library is developed to plot the glucose, insulin, and meal fluctuations of a simulation. Jupyter notebooks are used for the visualisations where ready made scripts available to analyse the results on individual / cohort levels and conduct statistical tests.
+
 * **individual_analyzer.ipynb**: plot learning curves for an individual T1D subject (3 random seeds).
 * **cohort_analyzer.ipynb**: plot aggregate results for a given T1D cohort / protocol / agent; stats / metrics for the cohort. 
 * **compare_agents.ipynb**: compare agents (e.g., ppo, g2p2c) in an individual T1D subject level.
