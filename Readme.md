@@ -1,19 +1,21 @@
 ![header](img/header.png)
 <h1>Reinforcement Learning based Artificial Pancreas Systems.</h1>
 
-Introduction
---
-Design algorithms (agents / controllers) to control blood gluocse levels in people with Type 1 Diabetes (T1D). Optimal insulin range is 70-180 mg/dL. The dynamics of the glucoregulatory system is diverse among different T1D subjects and also across different age groups. Hence the accuracy of the agents need to be evaluated on all subjects.  
+Type 1 Diabetes (T1D) requires the administration of insulin externally to maintain glucose levels, which is cruicial as both low and high glucose levels are detrimental. This is usually done through an insulin pump attached to the body. An continuous glucose sensor is also attached to measure the glucose levels so that a control algorithm can estimate the appropriate insulin dose. In this project we design Reinforcement Learning (RL) based Artificial Pancreas Systems (APS) for the glucose control problem. The figure below shows the main components of an APS. 
 
-![Artificial Pancreas System](img/sys.png)
+<center><img src="https://chirathyh.github.io/images/sys.png" width="70%" alt="APS"></center>
+
+Maintaining glucose levels is a life-long optimisation problem, complicated due to the disturbances associated with daily events (meals, exercise, stress.. etc), delays present in glucose sensing and insulin action, partial observability, and safety constraints among others. A simulation of glucose regulation, using a RL-based strategy is shown below,
 
 ![Glucose Regulation](img/gif_glucose.gif)
 
-Contributions
+You can find more details and an online-demonstration tool of our RL-based glucose control algorithms by visiting [**CAPSML**](http://capsml.com/).
+
+Project Contributions
 -- 
-* Formulate the problem as a continuing continous control problem in an POMDP environemnt. Eliminate the requirement of carbohydrate estimation aiming to reduce the cognitive burden. [Paper-Link]<br>
-* Propose clinically inspired action translation functions for efficient learning. [Paper-Link]<br>
-* RL algorithm G2P2C: Glucose Control by Glucose Prediction and Planning. [Paper-Link] 
+* We formulate the glucose regulation problem as a continuing continous control problem in an POMDP environemnt. We use the average reward RL setting and the Proximal Policy Optimisation (PPO) algorithm to develop a system which eliminates the requirement of carbohydrate estimation aiming to reduce the cognitive burden on people with T1D [[Paper]](https://ieeexplore.ieee.org/abstract/document/9871054) .<br>
+* The control space (i.e., the insulin secretion rate) consists of very small doses of insulin known as basal insulin and larger doses called bolus insulin which is used to counter large glucose fluctuations. We propose a non-linear continuous action space, inspired by clinical treatment to overcome challenges (skewed action distribution / redundant actions) associated with the continuous action space which improves the performance and efficiency in learning [[Pre-print]](https://ieeexplore.ieee.org/abstract/document/9871054) <br>
+* G2P2C: Glucose Control by Glucose Prediction and Planning, a deep reinforcement learning algorithm based on PPO, which introduced two auxiliary phases; model learning and planning. The model learning phase learns a glucose dynamics model while the planning phase fine-tunes the learnt policy to a short-horizon to counter the short-term fluctuations of glucose. The system eliminates the need for carbohydrate estimation and meal announcement [[Pre-print]](https://ieeexplore.ieee.org/abstract/document/9871054) . 
 
 Using the project
 --
@@ -109,7 +111,6 @@ A plotting library is developed to plot the glucose, insulin, and meal fluctuati
 
 ![Artificial Pancreas System](img/glucose.png)
 
-Citing Our Work
 ### Citing
 ```
 @article{hettiarachchi2022_G2P2C,
@@ -138,9 +139,14 @@ journal={Australasian Joint Conference on Artificial Intelligence (accapted/in-p
 }
 ```
 
-Contact Us
+Acknowledgement
 --
-Chirath Hettiarachchi - chirath.hettiarachchi@anu.edu.au
-School of Computing, College of Engineering & Computer Science,
+
+This research is funded by the Australian National University and the Our Health in Our Hands initiative; and by the National Computational Infrastructure (NCI Australia), and NCRIS enabled capability supported by the Australian Government. 
+
+Contact
+--
+Chirath Hettiarachchi - chirath.hettiarachchi@anu.edu.au\
+School of Computing, College of Engineering & Computer Science,\
 Australian National University. 
 
