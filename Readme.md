@@ -23,7 +23,8 @@ Using the project
 --
 
 <h4>Installation</h4>
-* Clone the repository.<br>
+
+* Clone the repository <code>git clone git@github.com:chirathyh/G2P2C.git</code>.<br>
 * Create a .env file and provide the path to the project.<br>
 
 <h4>Prerequsites</h4>
