@@ -26,7 +26,7 @@ Using the project
 
 * Clone the repository: <code>git clone git@github.com:chirathyh/G2P2C.git</code>.<br>
 * Move inside the project folder: <code>cd G2P2C</code>
-* Create a .env file and provide the path to the project.<br>
+* Create a <code>.env</code> file and add the folder path to the project.<br>
 
 <h4>Prerequsites</h4>
 Install [simglucose v0.2.1](https://github.com/jxx123/simglucose) which is an open source version of the UVA/Padova 2008 simulator approved by the FDA (Recommended to install using <code>pip install -e .</code>). The simulation environment and scenarios used in this project are extended from the original environment.
