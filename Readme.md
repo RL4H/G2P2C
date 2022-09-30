@@ -17,18 +17,18 @@ Project Contributions
 -- 
 * We formulate the glucose regulation problem as a continuing continous control problem in an POMDP environemnt. We use the average reward RL setting and the Proximal Policy Optimisation (PPO) algorithm to develop a system which eliminates the requirement of carbohydrate estimation aiming to reduce the cognitive burden on people with T1D [[Paper]](https://ieeexplore.ieee.org/abstract/document/9871054) .<br>
 * The control space (i.e., the insulin secretion rate) consists of very small doses of insulin known as basal insulin and larger doses called bolus insulin which is used to counter large glucose fluctuations. We propose a non-linear continuous action space, inspired by clinical treatment to overcome challenges (skewed action distribution / redundant actions) associated with the continuous action space which improves the performance and efficiency in learning [Accepted, in-press, released soon] .<br>
-* G2P2C: Glucose Control by Glucose Prediction and Planning, a deep reinforcement learning algorithm based on PPO, which introduced two auxiliary phases; model learning and planning. The model learning phase learns a glucose dynamics model while the planning phase fine-tunes the learnt policy to a short-horizon to counter the short-term fluctuations of glucose. The system eliminates the need for carbohydrate estimation and meal announcement [Pre-print released soon] . 
+* G2P2C: Glucose Control by Glucose Prediction and Planning, a deep reinforcement learning algorithm based on PPO, which introduced two auxiliary phases; model learning and planning. The model learning phase learns a glucose dynamics model while the planning phase fine-tunes the learnt policy to a short-horizon to counter the short-term fluctuations of glucose. The system eliminates the need for carbohydrate estimation and meal announcement [Pre-print publicly released soon] . 
 
 Using the project
 --
 
 <h4>Installation</h4>
 
-* Create a Python3.8 virtual environment.
+* Create and activate a Python3.8 virtual environment.
 * Clone the repository: <code>git clone git@github.com:chirathyh/G2P2C.git</code>.<br>
 * Go to the project folder (G2P2C): <code>cd G2P2C</code>
+* Install the required Python libraries <code>requirements.txt</code>. 
 * Create an environment file <code>.env</code> and add the folder path to the project.<br>
-* Install the required Python libraries. 
 
 <h4>Prerequsites</h4>
 Install [[simglucosev0.2.1]](https://github.com/jxx123/simglucose) which is an open source version of the UVA/Padova 2008 simulator approved by the FDA (Recommended to install using <code>pip install -e .</code>). The simulation environment and scenarios used in this project are extended from the original environment.
