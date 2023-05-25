@@ -124,11 +124,13 @@ journal={Available at SSRN: https://ssrn.com/abstract=4226648 or http://dx.doi.o
 }
 ```
 ```
-@article{hettiarachchi2022_actionspace,
-title={Non-linear Continuous Action Spaces for Reinforcement Learning in Type 1 Diabetes},
-author={Hettiarachchi, Chirath and Malagutti, Nicolo and Nolan, Christopher and Suominen, Hanna and Daskalaki, Eleni},
-year={2022},
-journal={Australasian Joint Conference on Artificial Intelligence (accapted/in-press)},
+@inproceedings{hettiarachchi2022non,
+  title={Non-linear Continuous Action Spaces for Reinforcement Learning in Type 1 Diabetes},
+  author={Hettiarachchi, Chirath and Malagutti, Nicolo and Nolan, Christopher J and Suominen, Hanna and Daskalaki, Elena},
+  booktitle={AI 2022: Advances in Artificial Intelligence: 35th Australasian Joint Conference, AI 2022, Perth, WA, Australia, December 5-8, 2022, Proceedings},
+  pages={557--570},
+  year={2022},
+  organization={Springer}
 }
 ```
 ```
