@@ -120,7 +120,7 @@ A plotting library is developed to plot the glucose, insulin, and meal fluctuati
 title={G2P2C: A Deep Reinforcement Learning Algorithm for Glucose Control by Glucose Prediction and Planning in Type 1 Diabetes},
 author={Hettiarachchi, Chirath and Malagutti, Nicolo and Nolan,  Christopher and Suominen, Hanna and Daskalaki, Eleni},,
 year={2022},
-journal={Journal of Artificial Intelligence in Medicine preprint <link>},
+journal={Available at SSRN: https://ssrn.com/abstract=4226648 or http://dx.doi.org/10.2139/ssrn.4226648},
 }
 ```
 ```
