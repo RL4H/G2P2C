@@ -116,6 +116,13 @@ A plotting library is developed to plot the glucose, insulin, and meal fluctuati
 
 ### Citing
 ```
+@article{hettiarachchi2023reinforcement,
+  title={Reinforcement Learning-based Artificial Pancreas Systems to Automate Treatment in Type 1 Diabetes},
+  author={Hettiarachchi, Chirath and others},
+  year={2023},
+  publisher={The Australian National University}
+}
+```
 @article{hettiarachchi2022_G2P2C,
 title={G2P2C: A Deep Reinforcement Learning Algorithm for Glucose Control by Glucose Prediction and Planning in Type 1 Diabetes},
 author={Hettiarachchi, Chirath and Malagutti, Nicolo and Nolan,  Christopher and Suominen, Hanna and Daskalaki, Eleni},,
