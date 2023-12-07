@@ -12,7 +12,7 @@ Maintaining glucose levels is a life-long optimisation problem, complicated due 
 ![Glucose Regulation](img/gif_glucose.gif)
 
 ```diff
-- text in red
+- Note: Existing classical control algorithms (PID, MPC) can successfully control glucose levels well when there is limited disturbances and uncertainty. However, during daily MEALS (a disturbance to the system) people with T1D have to be pro-active (to reduce uncertainty) and plan in advance (typically decide 20-minutes in advance what they will be having and manuallu estimate the amount of carbohydrates present in the meal). This adds a significant cognitive burden and errors associated with the manual process (e.g., estimating carbs) leads to sub-optimal glucose regulation. Therefore, in this work the main aim is to fully automate treatment, where the RL algorithms are not given any information related to upcoming meal events or carb contents and tested against challenging meal protocols (e.g., meals with large CHO for large disturbances, simulate the real world with skipped meals). If these conditions are relaxed, existing methods perform very well.     
 ```
 
 You can find more details and an online-demonstration tool of our RL-based glucose control algorithms by visiting [**CAPSML**](http://capsml.com/).
