@@ -16,7 +16,7 @@ You can find more details and an online-demonstration tool of our RL-based gluco
 Example training curves of RL algorithms for selected in-silico subjects are presented below (The Mean and standard deviation of the total reward achieved against environment steps for evaluation simulations are presented). 
 
 <p align="center">
-<img src="https://chirathyh.github.io/images/reward_curves.png" width="70%" alt="APS">
+<img src="img/reward_curves.png" width="70%" alt="Reward Curves">
 </p>
 
 Project Contributions
