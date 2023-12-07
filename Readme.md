@@ -11,6 +11,10 @@ Maintaining glucose levels is a life-long optimisation problem, complicated due 
 
 ![Glucose Regulation](img/gif_glucose.gif)
 
+```diff
+- text in red
+```
+
 You can find more details and an online-demonstration tool of our RL-based glucose control algorithms by visiting [**CAPSML**](http://capsml.com/).
 
 Example training curves of RL algorithms for selected in-silico subjects are presented below (the mean and standard deviation of the total reward achieved against environment steps for evaluation simulations are presented). The in-silico subjects can be considered as unique environments, Adolescent6 is the hardest to control while Adolescent0 is the easiest. Please refer publications below for detailed results and comparisons against standard clinical treatment approaches.  
