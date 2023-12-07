@@ -13,6 +13,12 @@ Maintaining glucose levels is a life-long optimisation problem, complicated due 
 
 You can find more details and an online-demonstration tool of our RL-based glucose control algorithms by visiting [**CAPSML**](http://capsml.com/).
 
+Example training curves of RL algorithms for selected in-silico subjects are presented below (The Mean and standard deviation of the total reward achieved against environment steps for evaluation simulations are presented). 
+
+<p align="center">
+<img src="https://chirathyh.github.io/images/reward_curves.png" width="70%" alt="APS">
+</p>
+
 Project Contributions
 -- 
 * We formulate the glucose regulation problem as a continuing continous control problem in an POMDP environemnt. We use the average reward RL setting and the Proximal Policy Optimisation (PPO) algorithm to develop a system which eliminates the requirement of carbohydrate estimation aiming to reduce the cognitive burden on people with T1D [[Paper]](https://ieeexplore.ieee.org/abstract/document/9871054) .<br>
