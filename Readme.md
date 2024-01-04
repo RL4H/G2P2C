@@ -22,7 +22,7 @@ Example training curves of RL algorithms for selected in-silico subjects are pre
 Performance comparison of clinical treatment strategies (BBI, BBHE: these require manual meal announcement and CHO estimation) and RL strategis (please find a comparison against other implementations of RL-based strategies in previous work in our [paper](https://www.sciencedirect.com/science/article/pii/S1746809423012727)). G2P2C achieved a better reward performance against other RL algorithms and comparable performance against clinical strategies in the adult in-silico cohort. 
 
 <p align="center">
-<img src="img/table_results.png" width="70%" alt="Reward Curves">
+<img src="img/table_results.png" width="50%" alt="Reward Curves">
 </p>
 
 ![#f03c15](https://via.placeholder.com/15/f03c15/000000?text=+) `Note: For RL, each in-silico subject can be considered as a unique environment. It is important to test against the full cohorts of the in-silico population, due to their varying glucose dynamics which results in some subjects being very easy to control while some are much harder. The results of our best performing RL algorithm (G2P2C) against different subjects is presented below (the ranking of the difficulty was consistent across other RL algorithms as well, refer publications for detailed results). `
