@@ -32,7 +32,7 @@ Performance comparison of clinical treatment strategies (BBI, BBHE: these requir
 </p>
 
 ![#c5f015](https://placehold.co/15x15/c5f015/c5f015.png) `Note: Additional resources released for researchers/developers:`
-- You can find more details and an online-demonstration tool of our RL-based glucose control algorithms by visiting [**CAPSML**](http://capsml.com/).
+- You can find more details and an online-demonstration tool of our RL-based glucose control algorithms by visiting [**CAPSML**](https://capsml.com/).
 - A high performance simulation environment which aims to facilitate the development of Reinforcement Learning based Artificial Pancreas Systems: [GluCoEnv](https://github.com/chirathyh/GluCoEnv).
 
 Project Contributions
