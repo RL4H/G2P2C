@@ -117,6 +117,9 @@ class Options:
         self.parser.add_argument('--n_bgp_steps', type=int, default=0, help='future eprediction horizon')
         self.parser.add_argument('--pretrain_period', type=int, default=5760, help='')
 
+        self.parser.add_argument('--discrete_actions', type=bool, default=False, help='')
+        # self.parser.add_argument('--n_discrete_actions', type=int, default=50, help='')
+
         # fixed "HARD" benchmark scenario
         # self.parser.add_argument('--meal_prob', type=list, default=[1, -1, 1, -1, 1, -1], help='')
         # self.parser.add_argument('--meal_amount', type=list, default=[45, 30, 85, 30, 80, 30], help='')

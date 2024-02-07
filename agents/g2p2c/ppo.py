@@ -10,9 +10,9 @@ import numpy as np
 from copy import deepcopy
 from utils.core import f_kl, r_kl
 from utils.reward_normalizer import RewardNormalizer
-from agents.ppo_aux_plan.worker import Worker
-from agents.ppo_aux_plan.models import ActorCritic
-from agents.ppo_aux_plan.core import AuxiliaryBuffer
+from agents.g2p2c.worker import Worker
+from agents.g2p2c.models import ActorCritic
+from agents.g2p2c.core import AuxiliaryBuffer
 
 
 class PPO:

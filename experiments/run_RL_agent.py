@@ -44,8 +44,8 @@ def set_agent_parameters(args):
     agent = None
     device = args.device
     if args.agent == 'ppo':
-        from agents.ppo_aux_plan.ppo import PPO
-        from agents.ppo_aux_plan.parameters import set_args
+        from agents.ppo.ppo import PPO
+        from agents.ppo.parameters import set_args
         args.aux_mode = 'off'
         args.use_planning = 'no'
         args = set_args(args)
@@ -54,11 +54,24 @@ def set_agent_parameters(args):
         #agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
         agent = PPO(args, device, False, '', '')
         dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
-        copy_folder(MAIN_PATH + '/agents/ppo_aux_plan', dst)
+        copy_folder(MAIN_PATH + '/agents/ppo', dst)
+
+    elif args.agent == 'a2c':
+        from agents.a2c.a2c import A2C
+        from agents.a2c.parameters import set_args
+        args.aux_mode = 'off'
+        args.use_planning = 'no'
+        args = set_args(args)
+        args = setup_folders(args)
+        weights = MAIN_PATH+'/results/ppo_lstm_12_testing/checkpoints/'
+        #agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
+        agent = A2C(args, device, False, '', '')
+        dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
+        copy_folder(MAIN_PATH + '/agents/a2c', dst)
 
     elif args.agent == 'g2p2c':
-        from agents.ppo_aux_plan.ppo import PPO
-        from agents.ppo_aux_plan.parameters import set_args
+        from agents.g2p2c.ppo import PPO
+        from agents.g2p2c.parameters import set_args
         args.aux_mode = 'dual'
         args.use_planning = 'yes'
         args = set_args(args)
@@ -67,7 +80,7 @@ def set_agent_parameters(args):
         #agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
         agent = PPO(args, device, False, '', '')
         dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
-        copy_folder(MAIN_PATH + '/agents/ppo_aux_plan', dst)
+        copy_folder(MAIN_PATH + '/agents/g2p2c', dst)
 
     elif args.agent == 'ppo_aux':
         from agents.ppo_aux_plan.ppo import PPO
