@@ -69,6 +69,19 @@ def set_agent_parameters(args):
         dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
         copy_folder(MAIN_PATH + '/agents/a2c', dst)
 
+    elif args.agent == 'sac':
+        from agents.sac.sac import SAC
+        from agents.sac.parameters import set_args
+        args.aux_mode = 'off'
+        args.use_planning = 'no'
+        args = set_args(args)
+        args = setup_folders(args)
+        weights = MAIN_PATH+'/results/ppo_lstm_12_testing/checkpoints/'
+        #agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
+        agent = SAC(args, device, False, '', '')
+        dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
+        copy_folder(MAIN_PATH + '/agents/sac', dst)
+
     elif args.agent == 'g2p2c':
         from agents.g2p2c.ppo import PPO
         from agents.g2p2c.parameters import set_args

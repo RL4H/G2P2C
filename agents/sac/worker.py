@@ -82,7 +82,7 @@ class Worker:
             selected_action = policy_step[0]
             rl_action, pump_action = self.pump.action(agent_action=selected_action, prev_state=self.init_state, prev_info=None)
             state, reward, is_done, info = self.env.step(pump_action)
-            reward = composite_reward(self.args, state=state.CGM, reward=reward, steps=(self.counter + 1), IS=0)
+            reward = composite_reward(self.args, state=state.CGM, reward=reward)
             this_state = deepcopy(self.cur_state)
             this_feat = deepcopy(self.feat)
             done_flag = 1 if state.CGM <= 40 or state.CGM >= 600 else 0

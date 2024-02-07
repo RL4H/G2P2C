@@ -316,49 +316,18 @@ def get_IS_Rew(state, IS):
     reward = reward + (REWARD_FACTOR * custom_reward([state]))
     return reward
 
-def composite_reward(args, state=None, reward=None, steps=None, IS=0):
+def composite_reward(args, state=None, reward=None):
     MAX_GLUCOSE = 600
     if reward == None:
         reward = custom_reward([state])
     x_max, x_min = 0, custom_reward([MAX_GLUCOSE]) #get_IS_Rew(MAX_GLUCOSE, 4) # custom_reward([MAX_GLUCOSE])
-
-    IS_THRESHOLD = 4.0
-    if IS < -IS_THRESHOLD:
-        IS = -IS_THRESHOLD
-    if IS > IS_THRESHOLD:
-        IS = IS_THRESHOLD
-
-    if args.use_IS_reward == 1:
-        reward = get_IS_Rew(state, IS)
-        x_min = get_IS_Rew(MAX_GLUCOSE, 4)
-
     reward = ((reward - x_min) / (x_max - x_min))
-
     if state <= 40:
         reward = -15
     elif state >= MAX_GLUCOSE:
         reward = 0
-    # elif state >= 300:
-    #     reward = -0.5
     else:
         reward = reward
-
-    #reward = (reward + 100) * 10 #/ 100
-    # reward = (reward + 100) / 100
-    #
-    # # adults: -15, 0
-    # # adolescents: -75, -20
-    #
-    # if state <= 40:
-    #     #reward = (-1000 * 10) * 1.5 #2 ->dec7
-    #     reward = -50
-    #     #reward = -75
-    #
-    # elif state >= 400:
-    #     reward = -50
-    #     #reward = -20
-    # else:
-    #     reward = reward
     return reward
 
 def traj_reward(args, bg_hist, k):

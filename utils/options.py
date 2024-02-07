@@ -117,6 +117,12 @@ class Options:
         self.parser.add_argument('--n_bgp_steps', type=int, default=0, help='future eprediction horizon')
         self.parser.add_argument('--pretrain_period', type=int, default=5760, help='')
 
+        # sac - 2023 implementation
+        self.parser.add_argument('--soft_tau', type=float, default=0.005, help='')
+        self.parser.add_argument('--replay_buffer_size', type=int, default=1000, help='')
+        self.parser.add_argument('--sample_size', type=int, default=1000, help='')
+        self.parser.add_argument('--sac_v2', type=bool, default=False, help='')
+
         self.parser.add_argument('--discrete_actions', type=bool, default=False, help='')
         # self.parser.add_argument('--n_discrete_actions', type=int, default=50, help='')
 

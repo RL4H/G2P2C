@@ -61,7 +61,7 @@ def set_args(args):
     #args.planning_coef = 1
     args.planning_lr = 1e-4 * 3
     args.kl = 1
-    args.use_planning = False if args.planning_coef == -1 else True
+    args.use_planning = False #if args.planning_coef == -1 else True
     args.planning_n_step = 6
     args.plan_type = 4
     args.n_planning_simulations = 50
