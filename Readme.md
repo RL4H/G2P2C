@@ -53,7 +53,7 @@ Using the project
 * Create an environment file <code>.env</code> and add the folder path to the project.<br>
 
 <h4>Prerequsites</h4>
-Install [[simglucosev0.2.1]](https://github.com/jxx123/simglucose) which is an open source version of the UVA/Padova 2008 simulator approved by the FDA (Recommended to install using <code>pip install -e .</code>). The simulation environment and scenarios used in this project are extended from the original environment.
+Install [[simglucosev0.2.2]](https://github.com/jxx123/simglucose) which is an open source version of the UVA/Padova 2008 simulator approved by the FDA (Recommended to install using <code>pip install -e .</code>, the simglucose 0.2.2 source code is available in the environments folder). The simulation environment and scenarios used in this project are extended from the original environment.
 
 <h4>Quick Start</h4>
 
