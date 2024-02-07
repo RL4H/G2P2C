@@ -15,7 +15,7 @@ from agents.g2p2c.models import ActorCritic
 from agents.g2p2c.core import AuxiliaryBuffer
 
 
-class PPO:
+class G2P2C:
     def __init__(self, args, device, load, path1, path2):
         self.args = args
         self.n_step = args.n_step
