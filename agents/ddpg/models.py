@@ -317,3 +317,13 @@ def NormedLinear(*args, scale=1.0):
     out = nn.Linear(*args)
     out.weight.data *= scale / out.weight.norm(dim=1, p=2, keepdim=True)
     return out
+
+class PolicyNoise():
+    #TODO - Implement noise decay and/or other noise models (eg. Ornstein-Uhlenbeck)
+    def __init__(self, mu, sigma):
+        self.mu = mu
+        self.sigma = sigma
+
+    def __call__(self):
+        return np.random.normal(self.mu, self.sigma)
+
