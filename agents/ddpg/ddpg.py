@@ -11,7 +11,7 @@ from copy import deepcopy
 from utils.core import f_kl, r_kl
 from utils.reward_normalizer import RewardNormalizer
 from agents.ddpg.worker import Worker
-from agents.ddpg.models import ActorCritic
+from agents.ddpg.models import ActorCritic, PolicyNoise
 from agents.ddpg.core import AuxiliaryBuffer
 
 

@@ -2,6 +2,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from copy import deepcopy
 import numpy as np
 from utils import core
 from agents.ppo.core import composite_reward
@@ -272,6 +273,9 @@ class ActorCritic(nn.Module):
         if load:
             self.Actor = torch.load(actor_path, map_location=device)
             self.Critic = torch.load(critic_path, map_location=device)
+
+        self.TargetActor = deepcopy(self.Actor)
+        self.TargetCritic = deepcopy(self.Critic)
         self.distribution = torch.distributions.Normal
         self.is_testing_worker = False
 
