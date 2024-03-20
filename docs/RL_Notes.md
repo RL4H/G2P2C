@@ -1,5 +1,11 @@
 <h1>Short Notes: Implemented RL Algorithms</h1>
 
+The RL objective: Maximise the expected return ($G(\tau)$)<br>
+```math
+J(\theta) = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
+```
+You can calculate the return using either the (1) discounted-RL or (2) Average-Reward-RL settings. <br>  
+
 <h2>A2C - Advantage Actor Critic</h2>
 
 ![A2C_Architecure](../img/base_architecture.png)
