@@ -3,7 +3,7 @@
 The glucose regulation task is formulated as a continuous control problem. <br>
 The RL objective: Maximise the expected return ($`G(\tau)`$)<br>
 ```math
-J(\theta) = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
+J(\pi) = \sum_{t} \bigg[r(s_{t}, a_{t})\bigg] = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
 ```
 You can calculate the return using either: <br>  
 (1) discounted-RL setting <code>--return_type discount</code>: 
