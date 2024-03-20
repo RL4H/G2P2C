@@ -1,6 +1,6 @@
 <h1>Short Notes: Implemented RL Algorithms</h1>
 
-<h2>Advantage Actor Critic (A2C)</h2>
+<h2>A2C - Advantage Actor Critic</h2>
 
 ![A2C_Architecure](../img/base_architecture.png)
 
@@ -13,7 +13,7 @@ L^{v}(\phi) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(v_{\phi}(s_{t}) - \hat{v}_{t}^{
 ```
 
 
-<h2>Proximal Policy Optimisation (PPO)</h2>
+<h2>PPO - Proximal Policy Optimisation</h2>
 
 ![PPO_Architecure](../img/base_architecture.png)
 
@@ -25,7 +25,7 @@ L^{\pi}_{PPO}(\theta) = \hat{E}_{t}\Bigg[ \Bigg. min \Bigg(\frac{\pi_{\theta}(a_
 L^{v}(\phi) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(v_{\phi}(s_{t}) - \hat{v}_{t}^{target} \Bigg)^{2}\right].
 ```
 
-<h2>G2P2C - Glucose Control by Glucose Prediction \& Planning</h2>
+<h2>G2P2C - Glucose Control by Glucose Prediction & Planning</h2>
 
 ![G2P2C_Architecure](../img/G2P2C_architecure.png)
 
@@ -46,7 +46,7 @@ L^{plan}(\theta) = \hat{E}_{t}\Bigg[ \Bigg. -log \bigg(\pi_{\theta}(a^{*}_{t}|s_
 ```
 
 
-**Advantage Actor Critic (SAC)**<br>
+<h2>SAC - Soft Actor Critic</h2>
 
 ![SAC_Architecure](../img/SAC_architecture.png)
 
