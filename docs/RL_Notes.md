@@ -13,7 +13,7 @@ L^{v}(\phi) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(v_{\phi}(s_{t}) - \hat{v}_{t}^{
 ```
 
 
-**Advantage Actor Critic (PPO)**<br>
+<h2>Proximal Policy Optimisation (PPO)</h2>
 
 ![PPO_Architecure](../img/base_architecture.png)
 
@@ -25,7 +25,7 @@ L^{\pi}_{PPO}(\theta) = \hat{E}_{t}\Bigg[ \Bigg. min \Bigg(\frac{\pi_{\theta}(a_
 L^{v}(\phi) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(v_{\phi}(s_{t}) - \hat{v}_{t}^{target} \Bigg)^{2}\right].
 ```
 
-**Advantage Actor Critic (G2P2C)**<br>
+<h2>G2P2C - Glucose Control by Glucose Prediction \& Planning</h2>
 
 ![G2P2C_Architecure](../img/G2P2C_architecure.png)
 
