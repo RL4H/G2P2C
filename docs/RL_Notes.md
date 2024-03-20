@@ -1,6 +1,6 @@
 <h1>Short Notes: Implemented RL Algorithms</h1>
 
-<h3>Advantage Actor Critic (A2C)</h3>
+<h2>Advantage Actor Critic (A2C)</h2>
 
 ![A2C_Architecure](../img/base_architecture.png)
 
