@@ -57,7 +57,7 @@ class GlucoseModel(nn.Module):
         # self.feature_extractor = self.n_hidden * self.n_layers * self.directions + \
         #                          (self.n_handcrafted_features * self.use_handcraft)
         self.feature_extractor = self.n_hidden * self.n_layers * self.directions
-        self.last_hidden = self.feature_extractor #* 2
+        self.last_hidden = self.feature_extractor  # * 2
         self.fc_layer1 = nn.Linear(self.feature_extractor + self.output, self.last_hidden)
         # self.fc_layer2 = nn.Linear(self.last_hidden, self.last_hidden)
         # self.fc_layer3 = nn.Linear(self.last_hidden, self.last_hidden)
@@ -190,7 +190,8 @@ class ActorNetwork(nn.Module):
             s = torch.cat((s[1:self.args.feature_history, :], s_new), dim=0)
         else:
             if self.args.n_features == 3:
-                s_new = torch.cat((cgm_pred, action, self.t_to_meal * torch.ones(batch_size, 1, device=self.device)), dim=1)
+                s_new = torch.cat((cgm_pred, action, self.t_to_meal * torch.ones(batch_size, 1, device=self.device)),
+                                  dim=1)
             if self.args.n_features == 2:
                 s_new = torch.cat((cgm_pred, action), dim=1)
             s_new = s_new.unsqueeze(1)
@@ -205,7 +206,8 @@ class ActorNetwork(nn.Module):
         batch_size = s.shape[0]
         first_action, first_mu, first_sigma, cum_reward, mu, sigma = 0, 0, 0, 0, 0, 0
         for i in range(self.planning_n_step):
-            extract_states, lstmOut = self.FeatureExtractor.forward(s, feat, mode) #.detach()# todo: fix handcraft features
+            extract_states, lstmOut = self.FeatureExtractor.forward(s, feat,
+                                                                    mode)  # .detach()# todo: fix handcraft features
             extract_states, lstmOut = extract_states.detach(), lstmOut.detach()
             mu, sigma, action, log_prob = self.ActionModule.forward(extract_states)
             if i == 0:
@@ -213,7 +215,8 @@ class ActorNetwork(nn.Module):
                 first_mu = mu
                 first_sigma = sigma
             _, _, cgm_pred = self.GlucoseModel.forward(lstmOut, action, mode)
-            bg = core.inverse_linear_scaling(y=cgm_pred.detach().cpu().numpy(), x_min=self.args.glucose_min, x_max=self.args.glucose_max)
+            bg = core.inverse_linear_scaling(y=cgm_pred.detach().cpu().numpy(), x_min=self.args.glucose_min,
+                                             x_max=self.args.glucose_max)
             reward = np.array([[composite_reward(self.args, state=xi, reward=None)] for xi in bg])
             reward = reward / (math.sqrt(rew_norm_var + 1e-8))
             reward = np.clip(reward, 10, 10)
@@ -228,7 +231,7 @@ class ActorNetwork(nn.Module):
             ### #todo
 
             s = self.update_state(s, cgm_pred, action, batch_size)
-            feat[0] += 1  #todo: quick fix for integrating the 'n', wont work other handcraft feat
+            feat[0] += 1  # todo: quick fix for integrating the 'n', wont work other handcraft feat
         cum_reward = torch.as_tensor(cum_reward, dtype=torch.float32, device=self.device)
         return first_action, first_mu, first_sigma, s, feat, cum_reward
 
@@ -238,13 +241,13 @@ class ActorNetwork(nn.Module):
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
         for i in range(0, len(actions)):
             cur_action = torch.as_tensor(actions[i], dtype=torch.float32, device=self.device).reshape(1)
-            extract_states, lstmOut = self.FeatureExtractor.forward(s, feat, mode) #.detach()
+            extract_states, lstmOut = self.FeatureExtractor.forward(s, feat, mode)  # .detach()
             extract_states, lstmOut = extract_states.detach(), lstmOut.detach()
 
             cgm_mu, cgm_sigma, cgm_pred = self.GlucoseModel.forward(lstmOut, cur_action, mode)
             pred = core.inverse_linear_scaling(y=cgm_pred.detach().cpu().numpy(), x_min=self.args.glucose_min,
                                                x_max=self.args.glucose_max)
-            horizon_error += ((pred - real_glucose[i])**2)
+            horizon_error += ((pred - real_glucose[i]) ** 2)
             s = self.update_state(s, cgm_pred, cur_action, batch_size=1)
         return horizon_error / len(actions)
 
@@ -256,10 +259,12 @@ class CriticNetwork(nn.Module):
         self.ValueModule = ValueModule(args, device)
         self.aux_mode = args.aux_mode
         self.GlucoseModel = GlucoseModel(args, device)
+
     def forward(self, s, feat, action, cgm_pred=True, mode='forward'):
         extract_states, lstmOut = self.FeatureExtractor.forward(s, feat, mode)
         value = self.ValueModule.forward(extract_states)
-        cgm_mu, cgm_sigma, cgm = self.GlucoseModel.forward(lstmOut, action.detach(), mode) if cgm_pred else (None, None, None)
+        cgm_mu, cgm_sigma, cgm = self.GlucoseModel.forward(lstmOut, action.detach(), mode) if cgm_pred else (
+        None, None, None)
         return value, cgm_mu, cgm_sigma, cgm
 
 
@@ -284,11 +289,12 @@ class ActorCritic(nn.Module):
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
         mean, std, action, log_prob, a_cgm_mu, a_cgm_sigma, a_cgm = self.Actor(s, feat, None, mode='forward',
                                                                                is_training=self.is_testing_worker)
-        state_value, c_cgm_mu,  c_cgm_sigma, c_cgm = self.Critic(s, feat, action, cgm_pred=True, mode='forward' )
-        return (mean, std, action, log_prob, a_cgm_mu, a_cgm_sigma, a_cgm), (state_value, c_cgm_mu,  c_cgm_sigma, c_cgm)
+        state_value, c_cgm_mu, c_cgm_sigma, c_cgm = self.Critic(s, feat, action, cgm_pred=True, mode='forward')
+        return (mean, std, action, log_prob, a_cgm_mu, a_cgm_sigma, a_cgm), (state_value, c_cgm_mu, c_cgm_sigma, c_cgm)
 
     def get_action(self, s, feat):
-        (mu, std, act, log_prob, a_cgm_mu, a_cgm_sig, a_cgm), (s_val, c_cgm_mu, c_cgm_sig, c_cgm) = self.predict(s, feat)
+        (mu, std, act, log_prob, a_cgm_mu, a_cgm_sig, a_cgm), (s_val, c_cgm_mu, c_cgm_sig, c_cgm) = self.predict(s,
+                                                                                                                 feat)
         data = dict(mu=mu, std=std, action=act, log_prob=log_prob, state_value=s_val, a_cgm_mu=a_cgm_mu,
                     a_cgm_sigma=a_cgm_sig, c_cgm_mu=c_cgm_mu, c_cgm_sigma=c_cgm_sig, a_cgm=a_cgm, c_cgm=c_cgm)
         return {k: v.detach().cpu().numpy() for k, v in data.items()}
@@ -296,7 +302,7 @@ class ActorCritic(nn.Module):
     def get_final_value(self, s, feat):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
-        state_value, _,  _, _ = self.Critic(s, feat, action=None, cgm_pred=False, mode='forward' )
+        state_value, _, _, _ = self.Critic(s, feat, action=None, cgm_pred=False, mode='forward')
         return state_value.detach().cpu().numpy()
 
     def evaluate_actor(self, state, action, feat):  # evaluate batch
@@ -307,8 +313,8 @@ class ActorCritic(nn.Module):
         return action_logprobs, dist_entropy, a_cgm_mu, a_cgm_sigma
 
     def evaluate_critic(self, state, feat, action, cgm_pred):  # evaluate batch
-        state_value, c_cgm_mu,  c_cgm_sigma, _ = self.Critic(state, feat, action, cgm_pred, mode='batch')
-        return torch.squeeze(state_value), c_cgm_mu,  c_cgm_sigma
+        state_value, c_cgm_mu, c_cgm_sigma, _ = self.Critic(state, feat, action, cgm_pred, mode='batch')
+        return torch.squeeze(state_value), c_cgm_mu, c_cgm_sigma
 
     def save(self, episode):
         actor_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_Actor.pth'
@@ -316,18 +322,39 @@ class ActorCritic(nn.Module):
         torch.save(self.Actor, actor_path)
         torch.save(self.Critic, critic_path)
 
-            
+    def update_target_networks(self, tau=None):
+        actor_params = self.Actor.named_parameters()
+        target_actor_params = self.TargetActor.named_parameters()
+        critic_params = self.Critic.named_parameters()
+        target_critic_params = self.TargetCritic.named_parameters()
+
+        actor_state_dict = dict(actor_params)
+        target_actor_state_dict = dict(target_actor_params)
+        critic_state_dict = dict(critic_params)
+        target_critic_state_dict = dict(target_critic_params)
+
+        for name in target_actor_state_dict:
+            target_actor_state_dict[name] = tau * actor_state_dict[name] + (1-tau) * target_actor_state_dict[name]
+
+        for name in target_critic_state_dict:
+            target_critic_state_dict[name] = tau * critic_state_dict[name] + (1-tau) * target_critic_state_dict[name]
+
+        self.TargetActor.load_state_dict(target_actor_state_dict)
+        self.TargetCritic.load_state_dict(target_critic_state_dict)
+
+
+
 def NormedLinear(*args, scale=1.0):
     out = nn.Linear(*args)
     out.weight.data *= scale / out.weight.norm(dim=1, p=2, keepdim=True)
     return out
 
+
 class PolicyNoise():
-    #TODO - Implement noise decay and/or other noise models (eg. Ornstein-Uhlenbeck)
+    # TODO - Implement noise decay and/or other noise models (eg. Ornstein-Uhlenbeck)
     def __init__(self, mu, sigma):
         self.mu = mu
         self.sigma = sigma
 
     def __call__(self):
         return np.random.normal(self.mu, self.sigma)
-
