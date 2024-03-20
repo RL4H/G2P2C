@@ -1,7 +1,7 @@
 <h1>Short Notes: Implemented RL Algorithms</h1>
 
 The glucose regulation task is formulated as a continuous control problem. <br>
-The RL objective: Maximise the expected return ($`G(\tau)`$)<br>
+The <b>Standard RL objective</b>: Maximise the expected sum of rewards (return - $`G(\tau)`$)<br>
 ```math
 J(\pi) = \sum_{t} \bigg[r(s_{t}, a_{t})\bigg] = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
 ```
