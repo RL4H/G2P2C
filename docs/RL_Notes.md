@@ -2,7 +2,7 @@
 
 **Advantage Actor Critic (A2C)**<br>
 
-![A2C_Architecure](../img/base_architecure.png)
+![A2C_Architecure](../img/base_architecture.png)
 
 ```math
 L^{\pi}_{A2C}(\theta) = \hat{E}_{t}\Bigg[ log \pi_{\theta}(a_{t}|s_{t}) \hat{A}_{t} + \beta_{s}H \bigg(\pi(\cdot|s_{t}) \bigg) \Bigg].
@@ -15,7 +15,7 @@ L^{v}(\phi) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(v_{\phi}(s_{t}) - \hat{v}_{t}^{
 
 **Advantage Actor Critic (PPO)**<br>
 
-![PPO_Architecure](../img/base_architecure.png)
+![PPO_Architecure](../img/base_architecture.png)
 
 ```math
 L^{\pi}_{PPO}(\theta) = \hat{E}_{t}\Bigg[ \Bigg. min \Bigg(\frac{\pi_{\theta}(a_{t}|s_{t})}{\pi_{\theta_{old}}(a_{t}|s_{t})}\hat{A}_{t}, clip \bigg(\frac{\pi_{\theta}(a_{t}|s_{t})}{\pi_{\theta_{old}}(a_{t}|s_{t})}, 1-\epsilon, 1+\epsilon \bigg)\hat{A}_{t} \Bigg) + \beta_{s}H \bigg(\pi(\cdot|s_{t}) \bigg)\Bigg. \Bigg].
@@ -48,7 +48,7 @@ L^{plan}(\theta) = \hat{E}_{t}\Bigg[ \Bigg. -log \bigg(\pi_{\theta}(a^{*}_{t}|s_
 
 **Advantage Actor Critic (SAC)**<br>
 
-![SAC_Architecure](../img/SAC_architecure.png)
+![SAC_Architecure](../img/SAC_architecture.png)
 
 ```math
 L^{Q}_{SAC}(\phi_{j}) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(Q_{\phi_{j}}(s_{t}) - \hat{Q}_{t}^{target} \Bigg)^{2}\right] \text{for } j \in \{1,2\}.
