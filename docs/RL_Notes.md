@@ -22,6 +22,22 @@ L^{v}(\phi) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(v_{\phi}(s_{t}) - \hat{v}_{t}^{
 ```
 
 **Advantage Actor Critic (G2P2C)**
+Consists of 3 optimisation phases, the first phase is similar to **PPO**.<br>
+Model Learning Phase <br>
+```math
+L^{M^{\Pi}}(\theta) = \hat{\mathds{E}}_{t}\Bigg[ \Bigg. -log \bigg(M^{\Pi}_{\theta}(g_{t+1}|s_{t}, a_{t}) \bigg) + \beta_{1}d_{KL} \bigg[\pi_{\theta_{ppo}}(\cdot|s_{t}), \pi_{\theta}(\cdot|s_{t}) \bigg]\Bigg. \Bigg].
+```
+```math
+L^{M^{V}}(\phi) = \hat{\mathds{E}}_{t}\Bigg[ \Bigg. -log \bigg(M^{V}_{\phi}(g_{t+1}|s_{t}, a_{t}) \bigg) + \beta_{2}\frac{1}{2} \bigg(v_{\phi_{ppo}}(s_{t}) - \hat{v}_{\phi}(s_{t}) \bigg)^{2}\Bigg. \Bigg].
+```
+Planning Phase <br>
+```math
+\tau^{*} = \arg \max_{\tau}\Bigg[ \Bigg. (\sum_{q=1}^{n_{plan}}R_{q}) + v(s_{n_{plan}})\Bigg].
+```
+```math
+L^{plan}(\theta) = \hat{\mathds{E}}_{t}\Bigg[ \Bigg. -log \bigg(\pi_{\theta}(a^{*}_{t}|s_{t}) \bigg)\Bigg].
+```
+
 
 **Advantage Actor Critic (SAC)**
 
