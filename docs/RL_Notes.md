@@ -6,12 +6,12 @@ The RL objective: Maximise the expected return ($`G(\tau)`$)<br>
 J(\theta) = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
 ```
 You can calculate the return using either: <br>  
-(1) discounted-RL setting: 
+(1) discounted-RL setting <code>--return_type discount</code>: 
 ```math
 G_{t} = R_{t+1} + \gamma R_{t+2} + \gamma^{2}R_{t+3} + \cdots  = \sum_{k=0}^{\infty} \bigg[\gamma^{k}R_{t+k+1} \bigg], \gamma \in [0,1]
 ```
 OR <br>
-(2) Average-Reward-RL setting:
+(2) Average-Reward-RL setting <code>--return_type average</code>:
 ```math
 G_{t} = R_{t+1} - r(\pi) + R_{t+2} - r(\pi) + R_{t+3} - r(\pi) + \cdots .
 ```
