@@ -13,6 +13,10 @@ from utils.reward_normalizer import RewardNormalizer
 from agents.ddpg.worker import Worker
 from agents.ddpg.models import ActorCritic, PolicyNoise
 from agents.ddpg.core import AuxiliaryBuffer
+from collections import namedtuple, deque
+
+Transition = namedtuple('Transition',
+                        ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
 
 
 class DDPG:
@@ -52,13 +56,13 @@ class DDPG:
         self.n_planning_simulations = args.n_planning_simulations
         self.plan_batch_size = args.plan_batch_size
         self.n_plan_epochs = args.n_plan_epochs
-        #self.planning_lr = args.planning_lr
+        # self.planning_lr = args.planning_lr
 
         self.policy = ActorCritic(args, load, path1, path2, device).to(self.device)
         self.optimizer_Actor = torch.optim.Adam(self.policy.Actor.parameters(), lr=self.pi_lr)
         self.optimizer_Critic = torch.optim.Adam(self.policy.Critic.parameters(), lr=self.vf_lr)
-        self.optimizer_aux_pi = torch.optim.Adam(self.policy.Actor.parameters(), lr=self.aux_lr)
-        self.optimizer_aux_vf = torch.optim.Adam(self.policy.Critic.parameters(), lr=self.aux_lr)
+        self.optimizer_target_actor = torch.optim.Adam(self.policy.Actor.parameters(), lr=self.aux_lr)
+        self.optimizer_target_critic = torch.optim.Adam(self.policy.Critic.parameters(), lr=self.aux_lr)
         self.value_criterion = nn.MSELoss()
         self.shuffle_rollout = args.shuffle_rollout
         self.normalize_reward = args.normalize_reward
@@ -78,9 +82,8 @@ class DDPG:
         self.v_pred = torch.rand(self.n_training_workers, self.n_step + 1, device=self.device)
         self.first_flag = torch.rand(self.n_training_workers, self.n_step + 1, device=self.device)
 
-
-
-        self.save_log([['policy_grad', 'value_grad', 'val_loss', 'exp_var', 'true_var', 'pi_loss', 'avg_rew']], '/model_log')
+        self.save_log([['policy_grad', 'value_grad', 'val_loss', 'exp_var', 'true_var', 'pi_loss', 'avg_rew']],
+                      '/model_log')
         self.save_log([['vf_aux_grad', 'vf_aux_loss', 'pi_aux_grad', 'pi_aux_loss']], '/aux_model_log')
         self.save_log([['plan_grad', 'plan_loss']], '/planning_model_log')
         self.save_log([['ri', 'alive_steps', 'normo', 'hypo', 'sev_hypo', 'hyper', 'lgbi', 'hgbi',
@@ -170,7 +173,8 @@ class DDPG:
                 advantages_batch = self.rollout_buffer['adv'][start_idx:end_idx]
                 advantages_batch = (advantages_batch - advantages_batch.mean()) / (advantages_batch.std() + 1e-5)
                 self.optimizer_Actor.zero_grad()
-                logprobs, dist_entropy, _, _ = self.policy.evaluate_actor(old_states_batch, old_actions_batch, feat_batch)
+                logprobs, dist_entropy, _, _ = self.policy.evaluate_actor(old_states_batch, old_actions_batch,
+                                                                          feat_batch)
                 ratios = torch.exp(logprobs - old_logprobs_batch)
                 ratios = ratios.squeeze()
                 surr1 = ratios * advantages_batch
@@ -202,43 +206,43 @@ class DDPG:
         print('The policy loss is: {}'.format(temp_loss_log))
         return mean_pi_grad, temp_loss_log
 
-    def train_MCTS_planning(self):
-        planning_loss_log = torch.zeros(1, device=self.device)
-        planning_grad, count = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
-        continue_training, buffer_len = True, self.rollout_buffer['len']
-        for i in range(self.n_plan_epochs):
-            start_idx, n_batch = 0, 0
-            while start_idx < buffer_len:
-                n_batch += 1
-                end_idx = min(start_idx + self.plan_batch_size, buffer_len)
-                old_states_batch = self.rollout_buffer['s_hist'][start_idx:end_idx, :, :]
-                feat_batch = self.rollout_buffer['s_handcraft'][start_idx:end_idx, :, :]
-                self.optimizer_Actor.zero_grad()
-                rew_norm_var = (self.reward_normaliser.ret_rms.var).cpu().numpy()
-                expert_loss = torch.zeros(1, device=self.device)
-                for exp_iter in range(0, old_states_batch.shape[0]):
-                    batched_states = old_states_batch[exp_iter].repeat(self.n_planning_simulations, 1, 1)
-                    batched_feat = feat_batch[exp_iter].repeat(self.n_planning_simulations, 1, 1)
-                    expert_pi, mu, sigma, terminal_s, terminal_feat, Gt = self.policy.Actor.expert_search(batched_states,
-                                                                            batched_feat, rew_norm_var, mode='batch')
-                    V_terminal, _, _ = self.policy.evaluate_critic(terminal_s, terminal_feat, action=None, cgm_pred=False)
-                    returns_batch = (Gt + V_terminal.unsqueeze(1) * (self.gamma ** self.args.planning_n_step))
-                    _, index = torch.max(returns_batch, 0)
-                    index = index[0]
-                    dst = self.distribution(mu[index], sigma[index])
-                    expert_loss += -dst.log_prob(expert_pi[index].detach())
-                expert_loss = expert_loss / (old_states_batch.shape[0])
-                expert_loss.backward()
-                planning_grad += torch.nn.utils.clip_grad_norm_(self.policy.Actor.parameters(), self.grad_clip)
-                self.optimizer_Actor.step()
-                count += 1
-                start_idx += self.plan_batch_size
-                planning_loss_log += expert_loss.detach()
-            if not continue_training:
-                break
-        mean_pi_grad = planning_grad / count if count != 0 else 0
-        print('successful policy Expert Update')
-        return mean_pi_grad, planning_loss_log
+    # def train_MCTS_planning(self):
+    #     planning_loss_log = torch.zeros(1, device=self.device)
+    #     planning_grad, count = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
+    #     continue_training, buffer_len = True, self.rollout_buffer['len']
+    #     for i in range(self.n_plan_epochs):
+    #         start_idx, n_batch = 0, 0
+    #         while start_idx < buffer_len:
+    #             n_batch += 1
+    #             end_idx = min(start_idx + self.plan_batch_size, buffer_len)
+    #             old_states_batch = self.rollout_buffer['s_hist'][start_idx:end_idx, :, :]
+    #             feat_batch = self.rollout_buffer['s_handcraft'][start_idx:end_idx, :, :]
+    #             self.optimizer_Actor.zero_grad()
+    #             rew_norm_var = (self.reward_normaliser.ret_rms.var).cpu().numpy()
+    #             expert_loss = torch.zeros(1, device=self.device)
+    #             for exp_iter in range(0, old_states_batch.shape[0]):
+    #                 batched_states = old_states_batch[exp_iter].repeat(self.n_planning_simulations, 1, 1)
+    #                 batched_feat = feat_batch[exp_iter].repeat(self.n_planning_simulations, 1, 1)
+    #                 expert_pi, mu, sigma, terminal_s, terminal_feat, Gt = self.policy.Actor.expert_search(batched_states,
+    #                                                                         batched_feat, rew_norm_var, mode='batch')
+    #                 V_terminal, _, _ = self.policy.evaluate_critic(terminal_s, terminal_feat, action=None, cgm_pred=False)
+    #                 returns_batch = (Gt + V_terminal.unsqueeze(1) * (self.gamma ** self.args.planning_n_step))
+    #                 _, index = torch.max(returns_batch, 0)
+    #                 index = index[0]
+    #                 dst = self.distribution(mu[index], sigma[index])
+    #                 expert_loss += -dst.log_prob(expert_pi[index].detach())
+    #             expert_loss = expert_loss / (old_states_batch.shape[0])
+    #             expert_loss.backward()
+    #             planning_grad += torch.nn.utils.clip_grad_norm_(self.policy.Actor.parameters(), self.grad_clip)
+    #             self.optimizer_Actor.step()
+    #             count += 1
+    #             start_idx += self.plan_batch_size
+    #             planning_loss_log += expert_loss.detach()
+    #         if not continue_training:
+    #             break
+    #     mean_pi_grad = planning_grad / count if count != 0 else 0
+    #     print('successful policy Expert Update')
+    #     return mean_pi_grad, planning_loss_log
 
     def train_vf(self):
         print('Running vf update...')
@@ -257,7 +261,8 @@ class DDPG:
                 returns_batch = self.rollout_buffer['ret'][start_idx:end_idx]
 
                 self.optimizer_Critic.zero_grad()
-                state_values, _, _ = self.policy.evaluate_critic(old_states_batch, feat_batch, action=None, cgm_pred=False)
+                state_values, _, _ = self.policy.evaluate_critic(old_states_batch, feat_batch, action=None,
+                                                                 cgm_pred=False)
                 value_loss = self.value_criterion(state_values, returns_batch)
                 value_loss.backward()
                 value_grad += torch.nn.utils.clip_grad_norm_(self.policy.Critic.parameters(), self.grad_clip)
@@ -272,113 +277,251 @@ class DDPG:
                 var_y = torch.var(y_true)
                 true_var += var_y
                 explained_var += 1 - torch.var(y_true - y_pred) / (var_y + 1e-5)
-        #print('\nvalue update: explained varience is {} true variance is {}'.format(explained_var / val_count, true_var / val_count))
+        # print('\nvalue update: explained varience is {} true variance is {}'.format(explained_var / val_count, true_var / val_count))
         return value_grad / val_count, val_loss_log, explained_var / val_count, true_var / val_count
 
-    def train_aux(self):
-        print('Running aux update...')
-        self.AuxiliaryBuffer.update_targets(self.policy)
-        aux_val_grad, aux_pi_grad = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
-        aux_val_loss_log, aux_val_count = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
-        aux_pi_loss_log, aux_pi_count = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
-        buffer_len = self.AuxiliaryBuffer.old_states.shape[0]
-        rand_perm = torch.randperm(buffer_len)
-        state = self.AuxiliaryBuffer.old_states[rand_perm, :, :]  # torch.Size([batch, n_steps, features])
-        handcraft_feat = self.AuxiliaryBuffer.handcraft_feat[rand_perm, :, :]
-        cgm_target = self.AuxiliaryBuffer.cgm_target[rand_perm]
-        actions_old = self.AuxiliaryBuffer.actions[rand_perm]
-        # new target old_logprob and value are calc based on networks trained after pi and vf
-        logprob_old = self.AuxiliaryBuffer.logprob[rand_perm]
-        value_target = self.AuxiliaryBuffer.value_target[rand_perm]
+    # def train_aux(self):
+    #     print('Running aux update...')
+    #     self.AuxiliaryBuffer.update_targets(self.policy)
+    #     aux_val_grad, aux_pi_grad = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
+    #     aux_val_loss_log, aux_val_count = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
+    #     aux_pi_loss_log, aux_pi_count = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
+    #     buffer_len = self.AuxiliaryBuffer.old_states.shape[0]
+    #     rand_perm = torch.randperm(buffer_len)
+    #     state = self.AuxiliaryBuffer.old_states[rand_perm, :, :]  # torch.Size([batch, n_steps, features])
+    #     handcraft_feat = self.AuxiliaryBuffer.handcraft_feat[rand_perm, :, :]
+    #     cgm_target = self.AuxiliaryBuffer.cgm_target[rand_perm]
+    #     actions_old = self.AuxiliaryBuffer.actions[rand_perm]
+    #     # new target old_logprob and value are calc based on networks trained after pi and vf
+    #     logprob_old = self.AuxiliaryBuffer.logprob[rand_perm]
+    #     value_target = self.AuxiliaryBuffer.value_target[rand_perm]
+    #
+    #     start_idx = 0
+    #     for i in range(self.aux_iterations):
+    #         while start_idx < buffer_len:
+    #             end_idx = min(start_idx + self.aux_batch_size, buffer_len)
+    #             state_batch = state[start_idx:end_idx, :, :]
+    #             handcraft_feat_batch = handcraft_feat[start_idx:end_idx, :, :]
+    #             cgm_target_batch = cgm_target[start_idx:end_idx]
+    #             value_target_batch = value_target[start_idx:end_idx]
+    #             logprob_old_batch = logprob_old[start_idx:end_idx]
+    #             actions_old_batch = actions_old[start_idx:end_idx]
+    #
+    #             if self.aux_mode == 'dual' or self.aux_mode == 'vf_only':
+    #                 self.optimizer_target_critic.zero_grad()
+    #                 value_predict, cgm_mu, cgm_sigma = self.policy.evaluate_critic(state_batch, handcraft_feat_batch,
+    #                                                                          actions_old_batch, cgm_pred=True)
+    #                 # Maximum Log Likelihood
+    #                 dst = self.distribution(cgm_mu, cgm_sigma)
+    #                 aux_vf_loss = -dst.log_prob(cgm_target_batch).mean() + self.aux_vf_coef * self.value_criterion(value_predict, value_target_batch)
+    #                 aux_vf_loss.backward()
+    #                 aux_val_grad += torch.nn.utils.clip_grad_norm_(self.policy.Critic.parameters(), self.grad_clip)
+    #                 self.optimizer_target_critic.step()
+    #                 aux_val_loss_log += aux_vf_loss.detach()
+    #                 aux_val_count += 1
+    #
+    #             if self.aux_mode == 'dual' or self.aux_mode == 'pi_only':
+    #                 self.optimizer_target_actor.zero_grad()
+    #                 logprobs, dist_entropy, cgm_mu, cgm_sigma = self.policy.evaluate_actor(state_batch, actions_old_batch,
+    #                                                                                  handcraft_feat_batch)
+    #                 # debugging
+    #                 if logprobs.shape[0] == 2:
+    #                     print('debugging the error')
+    #                     print(state_batch)
+    #                     print(actions_old_batch)
+    #                     print(handcraft_feat_batch)
+    #                     print(state_batch.shape)
+    #                     print(actions_old_batch.shape)
+    #                     print(handcraft_feat_batch.shape)
+    #
+    #                 # experimenting with KL divegrence implementations
+    #                 if self.args.kl == 0:
+    #                     kl_div = f_kl(logprob_old_batch, logprobs)
+    #                 elif self.args.kl == 1:
+    #                     kl_div = f_kl(logprobs, logprob_old_batch)
+    #                 elif self.args.kl == 2:
+    #                     kl_div = r_kl(logprob_old_batch, logprobs)
+    #                 else:
+    #                     kl_div = r_kl(logprobs, logprob_old_batch)
+    #
+    #                 # maximum liklihood est
+    #                 dst = self.distribution(cgm_mu, cgm_sigma)
+    #                 aux_pi_loss = -dst.log_prob(cgm_target_batch).mean() + self.aux_pi_coef * kl_div
+    #                 aux_pi_loss.backward()
+    #                 aux_pi_grad += torch.nn.utils.clip_grad_norm_(self.policy.Actor.parameters(), self.grad_clip)
+    #                 self.optimizer_target_actor.step()
+    #                 aux_pi_loss_log += aux_pi_loss.detach()
+    #                 aux_pi_count += 1
+    #
+    #             start_idx += self.aux_batch_size
+    #     if self.args.verbose:
+    #         print('Successful Auxilliary Update.')
+    #     return aux_val_grad / aux_val_count, aux_val_loss_log, aux_pi_grad / aux_pi_count, aux_pi_loss_log
 
-        start_idx = 0
-        for i in range(self.aux_iterations):
-            while start_idx < buffer_len:
-                end_idx = min(start_idx + self.aux_batch_size, buffer_len)
-                state_batch = state[start_idx:end_idx, :, :]
-                handcraft_feat_batch = handcraft_feat[start_idx:end_idx, :, :]
-                cgm_target_batch = cgm_target[start_idx:end_idx]
-                value_target_batch = value_target[start_idx:end_idx]
-                logprob_old_batch = logprob_old[start_idx:end_idx]
-                actions_old_batch = actions_old[start_idx:end_idx]
+    # def update(self, rollout):
+    #     if self.return_type == 'discount':
+    #         if self.normalize_reward:  # reward normalisation
+    #             self.reward = self.reward_normaliser(self.reward, self.first_flag)
+    #         self.adv, self.v_targ = self.compute_gae()  # # calc returns
+    #
+    #     if self.return_type == 'average':
+    #         self.reward = self.reward_normaliser(self.reward, self.first_flag, type='average')
+    #         self.adv, self.v_targ = self.compute_gae()
+    #
+    #     self.prepare_rollout_buffer()
+    #     self.model_logs[6] = self.avg_rew
+    #     self.model_logs[0], self.model_logs[5] = self.train_pi()
+    #     self.model_logs[1], self.model_logs[2], self.model_logs[3], self.model_logs[4]  = self.train_vf()
+    #
+    #     # if self.aux_mode != 'off' and self.AuxiliaryBuffer.buffer_filled:
+    #     #     if (rollout + 1) % self.aux_frequency == 0:
+    #     #         self.aux_model_logs[0], self.aux_model_logs[1], self.aux_model_logs[2], self.aux_model_logs[3] = self.train_aux()
+    #
+    #     # if self.use_planning and self.start_planning:
+    #     # #if self.use_planning:
+    #     #     self.planning_model_logs[0], self.planning_model_logs[1] = self.train_MCTS_planning()
+    #
+    #     self.save_log([self.model_logs.detach().cpu().flatten().numpy()], '/model_log')
+    #     self.save_log([self.aux_model_logs.detach().cpu().flatten().numpy()], '/aux_model_log')
+    #     self.save_log([self.planning_model_logs.detach().cpu().flatten().numpy()], '/planning_model_log')
 
-                if self.aux_mode == 'dual' or self.aux_mode == 'vf_only':
-                    self.optimizer_aux_vf.zero_grad()
-                    value_predict, cgm_mu, cgm_sigma = self.policy.evaluate_critic(state_batch, handcraft_feat_batch,
-                                                                             actions_old_batch, cgm_pred=True)
-                    # Maximum Log Likelihood
-                    dst = self.distribution(cgm_mu, cgm_sigma)
-                    aux_vf_loss = -dst.log_prob(cgm_target_batch).mean() + self.aux_vf_coef * self.value_criterion(value_predict, value_target_batch)
-                    aux_vf_loss.backward()
-                    aux_val_grad += torch.nn.utils.clip_grad_norm_(self.policy.Critic.parameters(), self.grad_clip)
-                    self.optimizer_aux_vf.step()
-                    aux_val_loss_log += aux_vf_loss.detach()
-                    aux_val_count += 1
+    def update(self):
+        if len(self.replay_memory) < self.sample_size * 10:
+            return
 
-                if self.aux_mode == 'dual' or self.aux_mode == 'pi_only':
-                    self.optimizer_aux_pi.zero_grad()
-                    logprobs, dist_entropy, cgm_mu, cgm_sigma = self.policy.evaluate_actor(state_batch, actions_old_batch,
-                                                                                     handcraft_feat_batch)
-                    # debugging
-                    if logprobs.shape[0] == 2:
-                        print('debugging the error')
-                        print(state_batch)
-                        print(actions_old_batch)
-                        print(handcraft_feat_batch)
-                        print(state_batch.shape)
-                        print(actions_old_batch.shape)
-                        print(handcraft_feat_batch.shape)
+        print('Running network update...')
+        cl, pl, ql1, ql2, count = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device), \
+            torch.zeros(1, device=self.device), \
+            torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
+        pi_grad, q1_grad, q2_grad, coeff_grad = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device), \
+            torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
 
-                    # experimenting with KL divegrence implementations
-                    if self.args.kl == 0:
-                        kl_div = f_kl(logprob_old_batch, logprobs)
-                    elif self.args.kl == 1:
-                        kl_div = f_kl(logprobs, logprob_old_batch)
-                    elif self.args.kl == 2:
-                        kl_div = r_kl(logprob_old_batch, logprobs)
-                    else:
-                        kl_div = r_kl(logprobs, logprob_old_batch)
+        for i in range(self.train_pi_iters):
+            # sample from buffer
+            transitions = self.replay_memory.sample(self.sample_size)
+            batch = Transition(*zip(*transitions))
+            cur_state_batch = torch.cat(batch.state)
+            cur_feat_batch = torch.cat(batch.feat)
+            actions_batch = torch.cat(batch.action).unsqueeze(1)
+            reward_batch = torch.cat(batch.reward).unsqueeze(1)
+            next_state_batch = torch.cat(batch.next_state)
+            next_feat_batch = torch.cat(batch.next_feat)
+            done_batch = torch.cat(batch.done).unsqueeze(1)
 
-                    # maximum liklihood est
-                    dst = self.distribution(cgm_mu, cgm_sigma)
-                    aux_pi_loss = -dst.log_prob(cgm_target_batch).mean() + self.aux_pi_coef * kl_div
-                    aux_pi_loss.backward()
-                    aux_pi_grad += torch.nn.utils.clip_grad_norm_(self.policy.Actor.parameters(), self.grad_clip)
-                    self.optimizer_aux_pi.step()
-                    aux_pi_loss_log += aux_pi_loss.detach()
-                    aux_pi_count += 1
+            actions_pi = self.policy.get_action(cur_state_batch, cur_feat_batch)['action']
 
-                start_idx += self.aux_batch_size
-        if self.args.verbose:
-            print('Successful Auxilliary Update.')
-        return aux_val_grad / aux_val_count, aux_val_loss_log, aux_pi_grad / aux_pi_count, aux_pi_loss_log
+            #TODO how to find next state and reward based on an action
+            reward = 0
 
-    def update(self, rollout):
-        if self.return_type == 'discount':
-            if self.normalize_reward:  # reward normalisation
-                self.reward = self.reward_normaliser(self.reward, self.first_flag)
-            self.adv, self.v_targ = self.compute_gae()  # # calc returns
+            # value network update
+            self.value_optimizer.zero_grad()
+            target_value = reward + self.gamma * self.policy.TargetCritic(next_state_batch,next_feat_batch, self.policy.TargetActor(next_state_batch, next_feat_batch)) #
+            critic_network_loss = self.value_criterion(target_value,self.policy.Critic(cur_state_batch, cur_feat_batch, actions_batch))
+            critic_network_loss.backwards()
+            self.value_optimizer.step()
+            self.policy.update_target_networks(tau=0.005)
 
-        if self.return_type == 'average':
-            self.reward = self.reward_normaliser(self.reward, self.first_flag, type='average')
-            self.adv, self.v_targ = self.compute_gae()
 
-        self.prepare_rollout_buffer()
-        self.model_logs[6] = self.avg_rew
-        self.model_logs[0], self.model_logs[5] = self.train_pi()
-        self.model_logs[1], self.model_logs[2], self.model_logs[3], self.model_logs[4]  = self.train_vf()
+            # predicted_value = self.policy.predict(cur_state_batch, cur_feat_batch)
+            # value_func_estimate = min_qf_val - (self.entropy_coef * log_prob)  # todo the temperature paramter
+            # value_loss = 0.5 * self.value_criterion(predicted_value, value_func_estimate.detach())
+            # value_loss.backward()
+            # coeff_grad += torch.nn.utils.clip_grad_norm_(self.sac.value_net.parameters(), self.grad_clip)
+            # self.value_optimizer.step()
+            # cl += value_loss.detach()
+            #
+            # # q network update
+            # self.soft_q_optimizer1.zero_grad()
+            # self.soft_q_optimizer2.zero_grad()
+            # with torch.no_grad():  # calculate the target q vals here.
+            #     if self.sac_v2:
+            #         new_action, next_log_prob = self.sac.evaluate_policy(next_state_batch, next_feat_batch)
+            #         next_q_values = torch.min(self.sac.target_q_net1(next_state_batch, next_feat_batch, new_action),
+            #                                   self.sac.target_q_net2(next_state_batch, next_feat_batch, new_action))
+            #         next_q_values = next_q_values - self.entropy_coef * next_log_prob
+            #         target_q_values = (reward_batch + (self.gamma * (1 - done_batch) * next_q_values))
+            #     else:
+            #         target_value = self.sac.value_net_target(next_state_batch, next_feat_batch)
+            #         target_q_values = (reward_batch + self.gamma * (1 - done_batch) * target_value)
+            #
+            # predicted_q_value1 = self.sac.soft_q_net1(cur_state_batch, cur_feat_batch, actions_batch)
+            # predicted_q_value2 = self.sac.soft_q_net2(cur_state_batch, cur_feat_batch, actions_batch)
+            # q_value_loss1 = 0.5 * self.soft_q_criterion1(predicted_q_value1, target_q_values)
+            # q_value_loss2 = 0.5 * self.soft_q_criterion2(predicted_q_value2, target_q_values)
+            # q_value_loss1.backward()
+            # q1_grad += torch.nn.utils.clip_grad_norm_(self.sac.soft_q_net1.parameters(), self.grad_clip)
+            # self.soft_q_optimizer1.step()
+            # q_value_loss2.backward()
+            # q2_grad += torch.nn.utils.clip_grad_norm_(self.sac.soft_q_net2.parameters(), self.grad_clip)
+            # self.soft_q_optimizer2.step()
+            #
+            # # actor update : next q values
+            # # freeze q networks save compute: ref: openai:
+            # for p in self.sac.soft_q_net1.parameters():
+            #     p.requires_grad = False
+            # for p in self.sac.soft_q_net2.parameters():
+            #     p.requires_grad = False
+            #
+            # self.policy_optimizer.zero_grad()
+            # min_qf_pi = torch.min(self.sac.soft_q_net1(cur_state_batch, cur_feat_batch, actions_pi),
+            #                       self.sac.soft_q_net2(cur_state_batch, cur_feat_batch, actions_pi))
+            #
+            # policy_loss = (self.entropy_coef * log_prob - min_qf_pi).mean()
+            # policy_loss.backward()
+            # pi_grad += torch.nn.utils.clip_grad_norm_(self.sac.policy_net.parameters(), 10)
+            # self.policy_optimizer.step()
+            #
+            # # save compute: ref: openai:
+            # for p in self.sac.soft_q_net1.parameters():
+            #     p.requires_grad = True
+            # for p in self.sac.soft_q_net2.parameters():
+            #     p.requires_grad = True
+            #
+            # # entropy coeff update
+            # if self.sac_v2:
+            #     self.ent_coef_optimizer.zero_grad()
+            #     _, log_prob = self.sac.evaluate_policy(cur_state_batch, cur_feat_batch)
+            #     ent_coef_loss = -(self.log_ent_coef * (log_prob + self.target_entropy).detach()).mean()
+            #     ent_coef_loss.backward()
+            #     coeff_grad += torch.nn.utils.clip_grad_norm_([self.log_ent_coef], self.grad_clip)
+            #     self.ent_coef_optimizer.step()
+            #     cl += ent_coef_loss.detach()
+            #
+            # self.n_updates += 1
+            #
+            # if self.n_updates % self.target_update_interval == 0:
+            #     with torch.no_grad():
+            #         print("################updated target")
+            #         if self.sac_v2:
+            #             for param, target_param in zip(self.sac.soft_q_net1.parameters(),
+            #                                            self.sac.target_q_net1.parameters()):
+            #                 target_param.data.mul_((1 - self.soft_tau))
+            #                 target_param.data.add_(self.soft_tau * param.data)
+            #             for param, target_param in zip(self.sac.soft_q_net2.parameters(),
+            #                                            self.sac.target_q_net2.parameters()):
+            #                 target_param.data.mul_((1 - self.soft_tau))
+            #                 target_param.data.add_(self.soft_tau * param.data)
+            #         else:
+            #             for param, target_param in zip(self.sac.value_net.parameters(),
+            #                                            self.sac.value_net_target.parameters()):
+            #                 target_param.data.mul_((1 - self.soft_tau))
+            #                 target_param.data.add_(self.soft_tau * param.data)
+            #
+            # pl += policy_loss.detach()
+            # ql1 += q_value_loss1.detach()
+            # ql2 += q_value_loss2.detach()
 
-        if self.aux_mode != 'off' and self.AuxiliaryBuffer.buffer_filled:
-            if (rollout + 1) % self.aux_frequency == 0:
-                self.aux_model_logs[0], self.aux_model_logs[1], self.aux_model_logs[2], self.aux_model_logs[3] = self.train_aux()
-
-        if self.use_planning and self.start_planning:
-        #if self.use_planning:
-            self.planning_model_logs[0], self.planning_model_logs[1] = self.train_MCTS_planning()
-
+        self.model_logs[0] = cl  # value loss or coeff loss
+        self.model_logs[1] = pl
+        self.model_logs[2] = ql1
+        self.model_logs[3] = ql2
+        self.model_logs[4] = self.entropy_coef
+        self.model_logs[5] = pi_grad
+        self.model_logs[6] = q1_grad
+        self.model_logs[7] = q2_grad
+        self.model_logs[8] = coeff_grad  # value loss grad or coeff loss grad
         self.save_log([self.model_logs.detach().cpu().flatten().numpy()], '/model_log')
-        self.save_log([self.aux_model_logs.detach().cpu().flatten().numpy()], '/aux_model_log')
-        self.save_log([self.planning_model_logs.detach().cpu().flatten().numpy()], '/planning_model_log')
+        print('success')
 
     def decay_lr(self):
         self.entropy_coef = 0  # self.entropy_coef / 100
@@ -403,8 +546,10 @@ class DDPG:
         testing_args.time_variance = [1e-8, 1e-8, 1e-8, 1e-8, 1e-8, 1e-8]
         testing_args.meal_prob = [1, -1, 1, -1, 1, -1]
 
-        worker_agents = [Worker(args, 'training', patients, env_ids, i+5, i, self.device) for i in range(self.n_training_workers)]
-        testing_agents = [Worker(testing_args, 'testing', patients, env_ids, i+5000, i+5000, self.device) for i in range(self.n_testing_workers)]
+        worker_agents = [Worker(args, 'training', patients, env_ids, i + 5, i, self.device) for i in
+                         range(self.n_training_workers)]
+        testing_agents = [Worker(testing_args, 'testing', patients, env_ids, i + 5000, i + 5000, self.device) for i in
+                          range(self.n_testing_workers)]
 
         # ddpg learning
         for rollout in range(0, 30000):  # steps * n_workers * epochs
@@ -423,8 +568,8 @@ class DDPG:
                 rmse += actor_bgp_rmse
                 horizon_rmse += a_horizonBG_rmse
 
-            self.start_planning = True if (rmse/self.n_training_workers < 15) else False
-            print('The mean rmse for glucose prediction of Actor: {}'.format(rmse/self.n_training_workers))
+            self.start_planning = True if (rmse / self.n_training_workers < 15) else False
+            print('The mean rmse for glucose prediction of Actor: {}'.format(rmse / self.n_training_workers))
             print('The mean horizon rmse => {}'.format(horizon_rmse / self.n_training_workers))
             t2 = time.time()
 
@@ -465,7 +610,8 @@ class DDPG:
             if experiment_done:
                 print('################## starting the validation trials #######################')
                 n_val_trials = 3 if args.debug == 1 else 500
-                validation_agents = [Worker(testing_args, 'testing', patients, env_ids, i + 6000, i + 6000, self.device) for i in range(n_val_trials)]
+                validation_agents = [Worker(testing_args, 'testing', patients, env_ids, i + 6000, i + 6000, self.device)
+                                     for i in range(n_val_trials)]
                 for i in range(n_val_trials):
                     res, _, _ = validation_agents[i].rollout(self.policy)
                 print('Algo RAN Successfully')
@@ -492,4 +638,3 @@ class DDPG:
             res, _, _ = validation_agents[i].rollout(self.policy)
         print('Algo RAN Successfully')
         exit()
-

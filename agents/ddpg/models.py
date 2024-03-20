@@ -112,7 +112,7 @@ class ActionModule(nn.Module):
         mu = F.tanh(self.mu(fc_output))
         sigma = F.sigmoid(self.sigma(fc_output) + 1e-5)
         z = self.normalDistribution(0, 1).sample()
-        action = mu + sigma * z
+        action = mu #+ sigma * z
         action = torch.clamp(action, -1, 1)
         try:
             dst = self.normalDistribution(mu, sigma)
@@ -128,7 +128,7 @@ class ActionModule(nn.Module):
         # clamp the sigma
         # sigma = F.softplus(self.sigma(fc_output) + 1e-5)
         # sigma = torch.clamp(sigma, 1e-5, 0.33)
-        return mu, sigma, action, log_prob
+        return mu
 
 
 class ValueModule(nn.Module):
@@ -173,12 +173,12 @@ class ActorNetwork(nn.Module):
 
     def forward(self, s, feat, old_action, mode, is_training=False):
         extract_states, lstmOut = self.FeatureExtractor.forward(s, feat, mode)
-        mu, sigma, action, log_prob = self.ActionModule.forward(extract_states)
+        mu = self.ActionModule.forward(extract_states)
         if mode == 'forward':
-            cgm_mu, cgm_sigma, cgm = self.GlucoseModel.forward(lstmOut, action.detach(), mode)
+            cgm_mu, cgm_sigma, cgm = self.GlucoseModel.forward(lstmOut, mu.detach(), mode)
         else:
             cgm_mu, cgm_sigma, cgm = self.GlucoseModel.forward(lstmOut, old_action.detach(), mode)
-        return mu, sigma, action, log_prob, cgm_mu, cgm_sigma, cgm
+        return mu, cgm_mu, cgm_sigma, cgm
 
     def update_state(self, s, cgm_pred, action, batch_size):
         if batch_size == 1:
@@ -287,15 +287,15 @@ class ActorCritic(nn.Module):
     def predict(self, s, feat):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
-        mean, std, action, log_prob, a_cgm_mu, a_cgm_sigma, a_cgm = self.Actor(s, feat, None, mode='forward',
+        mu, a_cgm_mu, a_cgm_sigma, a_cgm = self.Actor(s, feat, None, mode='forward',
                                                                                is_training=self.is_testing_worker)
+        action = mu + PolicyNoise()
         state_value, c_cgm_mu, c_cgm_sigma, c_cgm = self.Critic(s, feat, action, cgm_pred=True, mode='forward')
-        return (mean, std, action, log_prob, a_cgm_mu, a_cgm_sigma, a_cgm), (state_value, c_cgm_mu, c_cgm_sigma, c_cgm)
+        return (mu, action, a_cgm_mu, a_cgm_sigma, a_cgm), (state_value, c_cgm_mu, c_cgm_sigma, c_cgm)
 
     def get_action(self, s, feat):
-        (mu, std, act, log_prob, a_cgm_mu, a_cgm_sig, a_cgm), (s_val, c_cgm_mu, c_cgm_sig, c_cgm) = self.predict(s,
-                                                                                                                 feat)
-        data = dict(mu=mu, std=std, action=act, log_prob=log_prob, state_value=s_val, a_cgm_mu=a_cgm_mu,
+        (mu, act, a_cgm_mu, a_cgm_sig, a_cgm), (s_val, c_cgm_mu, c_cgm_sig, c_cgm) = self.predict(s, feat)
+        data = dict(mu=mu, action=act, state_value=s_val, a_cgm_mu=a_cgm_mu,
                     a_cgm_sigma=a_cgm_sig, c_cgm_mu=c_cgm_mu, c_cgm_sigma=c_cgm_sig, a_cgm=a_cgm, c_cgm=c_cgm)
         return {k: v.detach().cpu().numpy() for k, v in data.items()}
 
