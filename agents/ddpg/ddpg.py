@@ -428,7 +428,7 @@ class DDPG:
 
             actions_pi = self.policy.get_action(cur_state_batch, cur_feat_batch)['action']
 
-            # TODO how to find next state and reward based on an action
+            # TODO how to find next state and reward based on an action.  Is it a case of iterating through reward_batch?
             reward = 0
 
             # value network update
@@ -438,8 +438,16 @@ class DDPG:
                                                                                                   next_feat_batch))  #
             critic_network_loss = self.value_criterion(target_value, self.policy.Critic(cur_state_batch, cur_feat_batch,
                                                                                         actions_batch))
+            actor_network_loss = -1 * deepcopy(critic_network_loss)
+
+
             critic_network_loss.backwards()
+            actor_network_loss.backwards()
+
             self.optimizer_Critic.step()
+            self.optimizer_Actor.step()
+
+            #TODO To undertake stocastic gradient ascent for Actor network -> need to apply a
             self.policy.update_target_networks(tau=0.005)
 
             # predicted_value = self.policy.predict(cur_state_batch, cur_feat_batch)
