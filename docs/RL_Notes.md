@@ -10,7 +10,7 @@ You can calculate the return using either: <br>
 ```math
 G_{t} = R_{t+1} + \gamma R_{t+2} + \gamma^{2}R_{t+3} + \cdots  = \sum_{k=0}^{\infty} \bigg[\gamma^{k}R_{t+k+1} \bigg], \gamma \in [0,1]
 ```
-OR <br>
+
 (2) Average-Reward-RL setting <code>--return_type average</code>:
 ```math
 G_{t} = R_{t+1} - r(\pi) + R_{t+2} - r(\pi) + R_{t+3} - r(\pi) + \cdots .
@@ -18,6 +18,7 @@ G_{t} = R_{t+1} - r(\pi) + R_{t+2} - r(\pi) + R_{t+3} - r(\pi) + \cdots .
 ```math
 r(\pi) \doteq \lim_{h \to \infty}\frac{1}{h}\sum_{t=1}^{h} \mathbb{E}[R_{t}|S_{0}, A_{0:t-1}\sim\pi].
 ```
+then the advantage 
 
 <h2>A2C - Advantage Actor Critic</h2>
 
