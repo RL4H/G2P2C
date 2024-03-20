@@ -19,6 +19,22 @@ Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
 
 
+class ReplayMemory(object):
+
+    def __init__(self, capacity):
+        self.memory = deque([], maxlen=capacity)
+
+    def push(self, *args):
+        """Save a transition"""
+        self.memory.append(Transition(*args))
+
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+
+    def __len__(self):
+        return len(self.memory)
+
+
 class DDPG:
     def __init__(self, args, device, load, path1, path2):
         self.args = args
@@ -41,28 +57,30 @@ class DDPG:
         self.n_testing_workers = args.n_testing_workers
         self.device = device
 
+        self.replay_buffer_size = args.replay_buffer_size
+        self.replay_memory = ReplayMemory(self.replay_buffer_size)
+        self.sample_size = args.sample_size
+
         # auxiliary phase
-        self.AuxiliaryBuffer = AuxiliaryBuffer(args, device)
-        self.aux_mode = args.aux_mode
-        self.aux_frequency = args.aux_frequency
-        self.aux_iterations = args.n_aux_epochs
-        self.aux_batch_size = args.aux_batch_size
-        self.aux_vf_coef = args.aux_vf_coef
-        self.aux_pi_coef = args.aux_pi_coef
-        self.aux_lr = args.aux_lr
+        # self.AuxiliaryBuffer = AuxiliaryBuffer(args, device)
+        # self.aux_mode = args.aux_mode
+        # self.aux_frequency = args.aux_frequency
+        # self.aux_iterations = args.n_aux_epochs
+        # self.aux_batch_size = args.aux_batch_size
+        # self.aux_vf_coef = args.aux_vf_coef
+        # self.aux_pi_coef = args.aux_pi_coef
+        # self.aux_lr = args.aux_lr
 
         # planning phase
-        self.use_planning = True if args.use_planning == 'yes' else False
-        self.n_planning_simulations = args.n_planning_simulations
-        self.plan_batch_size = args.plan_batch_size
-        self.n_plan_epochs = args.n_plan_epochs
+        # self.use_planning = True if args.use_planning == 'yes' else False
+        # self.n_planning_simulations = args.n_planning_simulations
+        # self.plan_batch_size = args.plan_batch_size
+        # self.n_plan_epochs = args.n_plan_epochs
         # self.planning_lr = args.planning_lr
 
         self.policy = ActorCritic(args, load, path1, path2, device).to(self.device)
         self.optimizer_Actor = torch.optim.Adam(self.policy.Actor.parameters(), lr=self.pi_lr)
         self.optimizer_Critic = torch.optim.Adam(self.policy.Critic.parameters(), lr=self.vf_lr)
-        self.optimizer_target_actor = torch.optim.Adam(self.policy.Actor.parameters(), lr=self.aux_lr)
-        self.optimizer_target_critic = torch.optim.Adam(self.policy.Critic.parameters(), lr=self.aux_lr)
         self.value_criterion = nn.MSELoss()
         self.shuffle_rollout = args.shuffle_rollout
         self.normalize_reward = args.normalize_reward
@@ -129,32 +147,32 @@ class DDPG:
         vtarg = vpred[:, :-1] + adv
         return adv.to(device=orig_device), vtarg.to(device=orig_device)
 
-    def prepare_rollout_buffer(self):
-        '''concat data from different workers'''
-        s_hist = self.old_states.view(-1, self.feature_history, self.n_features)
-        s_handcraft = self.feat.view(-1, 1, self.n_handcrafted_features)
-        act = self.old_actions.view(-1, 1)
-        logp = self.old_logprobs.view(-1, 1)
-        v_targ = self.v_targ.view(-1)
-        adv = self.adv.view(-1)
-        cgm_target = self.cgm_target.view(-1)
-        first_flag = self.first_flag.view(-1)
-        buffer_len = s_hist.shape[0]
-
-        self.AuxiliaryBuffer.update(s_hist, s_handcraft, cgm_target, act, first_flag)
-
-        if self.shuffle_rollout:
-            rand_perm = torch.randperm(buffer_len)
-            s_hist = s_hist[rand_perm, :, :]  # torch.Size([batch, n_steps, features])
-            s_handcraft = s_handcraft[rand_perm, :, :]  # torch.Size([batch, n_steps, features])
-            act = act[rand_perm, :]  # torch.Size([batch, 1])
-            logp = logp[rand_perm, :]  # torch.Size([batch, 1])
-            v_targ = v_targ[rand_perm]  # torch.Size([batch])
-            adv = adv[rand_perm]  # torch.Size([batch])
-            cgm_target = cgm_target[rand_perm]
-
-        self.rollout_buffer = dict(s_hist=s_hist, s_handcraft=s_handcraft, act=act, logp=logp, ret=v_targ,
-                                   adv=adv, len=buffer_len, cgm_target=cgm_target)
+    # def prepare_rollout_buffer(self):
+    #     '''concat data from different workers'''
+    #     s_hist = self.old_states.view(-1, self.feature_history, self.n_features)
+    #     s_handcraft = self.feat.view(-1, 1, self.n_handcrafted_features)
+    #     act = self.old_actions.view(-1, 1)
+    #     logp = self.old_logprobs.view(-1, 1)
+    #     v_targ = self.v_targ.view(-1)
+    #     adv = self.adv.view(-1)
+    #     cgm_target = self.cgm_target.view(-1)
+    #     first_flag = self.first_flag.view(-1)
+    #     buffer_len = s_hist.shape[0]
+    #
+    #     self.AuxiliaryBuffer.update(s_hist, s_handcraft, cgm_target, act, first_flag)
+    #
+    #     if self.shuffle_rollout:
+    #         rand_perm = torch.randperm(buffer_len)
+    #         s_hist = s_hist[rand_perm, :, :]  # torch.Size([batch, n_steps, features])
+    #         s_handcraft = s_handcraft[rand_perm, :, :]  # torch.Size([batch, n_steps, features])
+    #         act = act[rand_perm, :]  # torch.Size([batch, 1])
+    #         logp = logp[rand_perm, :]  # torch.Size([batch, 1])
+    #         v_targ = v_targ[rand_perm]  # torch.Size([batch])
+    #         adv = adv[rand_perm]  # torch.Size([batch])
+    #         cgm_target = cgm_target[rand_perm]
+    #
+    #     self.rollout_buffer = dict(s_hist=s_hist, s_handcraft=s_handcraft, act=act, logp=logp, ret=v_targ,
+    #                                adv=adv, len=buffer_len, cgm_target=cgm_target)
 
     def train_pi(self):
         print('Running pi update...')
@@ -410,17 +428,19 @@ class DDPG:
 
             actions_pi = self.policy.get_action(cur_state_batch, cur_feat_batch)['action']
 
-            #TODO how to find next state and reward based on an action
+            # TODO how to find next state and reward based on an action
             reward = 0
 
             # value network update
-            self.value_optimizer.zero_grad()
-            target_value = reward + self.gamma * self.policy.TargetCritic(next_state_batch,next_feat_batch, self.policy.TargetActor(next_state_batch, next_feat_batch)) #
-            critic_network_loss = self.value_criterion(target_value,self.policy.Critic(cur_state_batch, cur_feat_batch, actions_batch))
+            self.optimizer_Critic.zero_grad()
+            target_value = reward + self.gamma * self.policy.TargetCritic(next_state_batch, next_feat_batch,
+                                                                          self.policy.TargetActor(next_state_batch,
+                                                                                                  next_feat_batch))  #
+            critic_network_loss = self.value_criterion(target_value, self.policy.Critic(cur_state_batch, cur_feat_batch,
+                                                                                        actions_batch))
             critic_network_loss.backwards()
-            self.value_optimizer.step()
+            self.optimizer_Critic.step()
             self.policy.update_target_networks(tau=0.005)
-
 
             # predicted_value = self.policy.predict(cur_state_batch, cur_feat_batch)
             # value_func_estimate = min_qf_val - (self.entropy_coef * log_prob)  # todo the temperature paramter
@@ -574,7 +594,7 @@ class DDPG:
             t2 = time.time()
 
             t3 = time.time()
-            self.update(rollout)
+            self.update()
             self.policy.save(rollout)
             t4 = time.time()
 
