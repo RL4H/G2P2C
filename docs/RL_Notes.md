@@ -1,6 +1,6 @@
 <h1>Short Notes: Implemented RL Algorithms</h1>
 
-The RL objective: Maximise the expected return ($G(\tau)$)<br>
+The RL objective: Maximise the expected return ($`G(\tau)`$)<br>
 ```math
 J(\theta) = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
 ```
