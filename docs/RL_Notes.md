@@ -46,7 +46,17 @@ L^{\pi}_{A2C}(\theta) = \hat{E}_{t}\Bigg[ log \pi_{\theta}(a_{t}|s_{t}) \hat{A}_
 ```math
 L^{v}(\phi) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(v_{\phi}(s_{t}) - \hat{v}_{t}^{target} \Bigg)^{2}\right].
 ```
-
+Reference:
+```
+@inproceedings{mnih2016asynchronous,
+  title={{Asynchronous Methods for Deep Reinforcement Learning}},
+  author={Mnih, Volodymyr and Badia, Adria Puigdomenech and Mirza, Mehdi and Graves, Alex and Lillicrap, Timothy and Harley, Tim and Silver, David and Kavukcuoglu, Koray},
+  booktitle={33\textsuperscript{rd} International Conference on Machine Learning},
+  pages={Proceedings (Vol. 48, Pp. 1928--1937)},
+  year={2016},
+  organization={PMLR},
+}
+```
 
 <h2>PPO - Proximal Policy Optimisation</h2>
 
@@ -58,6 +68,16 @@ L^{\pi}_{PPO}(\theta) = \hat{E}_{t}\Bigg[ \Bigg. min \Bigg(\frac{\pi_{\theta}(a_
 
 ```math
 L^{v}(\phi) = \hat{E}_{t}\left[\frac{1}{2} \Bigg(v_{\phi}(s_{t}) - \hat{v}_{t}^{target} \Bigg)^{2}\right].
+```
+
+Reference:
+```
+@article{schulman2017proximal,
+  title={{Proximal Policy Optimization Algorithms}},
+  author={Schulman, John and Wolski, Filip and Dhariwal, Prafulla and Radford, Alec and Klimov, Oleg},
+  journal={arXiv:1707.06347},
+  year={2017},
+  doi={https://doi.org/10.48550/arXiv.1707.06347}
 ```
 
 <h2>G2P2C - Glucose Control by Glucose Prediction & Planning</h2>
@@ -111,6 +131,15 @@ L^{\pi}_{SAC}(\theta) = \hat{E}_{t}\Bigg[ \alpha log(\pi_{\theta}(a_{t}|s_{t})) 
 ```math
 L^{\alpha}_{SAC}(\alpha) = \hat{E}_{t}\Bigg[ -\alpha log \pi_{t}(a_{t}|s_{t}) - \alpha \bar{H} \Bigg].
 ```
+Reference:
+```
+@article{haarnoja2018soft,
+  title={Soft actor-critic algorithms and applications},
+  author={Haarnoja, Tuomas and Zhou, Aurick and Hartikainen, Kristian and Tucker, George and Ha, Sehoon and Tan, Jie and Kumar, Vikash and Zhu, Henry and Gupta, Abhishek and Abbeel, Pieter and others},
+  journal={arXiv preprint arXiv:1812.05905},
+  year={2018}
+}
+}
 
 
 
