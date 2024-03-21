@@ -11,7 +11,7 @@ You can calculate the return using either: <br>
 G_{t} \doteq R_{t+1} + \gamma R_{t+2} + \gamma^{2}R_{t+3} + \cdots  = \sum_{k=0}^{\infty} \bigg[\gamma^{k}R_{t+k+1} \bigg], \gamma \in [0,1]
 ```
 ```math
-\hat{G_{t}} =R_{t+1} + \gamma R_{t+2} + \gamma^{2}R_{t+3} + \cdots  + \gamma^{t+n}\hat{v}^{\pi}(s_{t+n}).
+\hat{G_{t}} =R_{t+1} + \gamma R_{t+2} + \gamma^{2}R_{t+3} + \cdots  + \gamma^{t+n-1}\hat{v}^{\pi}(s_{t+n}).
 ```
 
 (2) Average-Reward-RL setting <code>--return_type average</code>:
