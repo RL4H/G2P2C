@@ -1,9 +1,9 @@
 <h1>Short Notes: Implemented RL Algorithms</h1>
 
 The glucose regulation task is formulated as a continuous control problem. <br>
-The <b>Standard RL objective</b>: Maximise the expected sum of rewards (return - $`G(\tau)`$), following a policy $`\pi`$. <br>
+The <b>Standard RL objective</b>: Maximise the expected sum of rewards (return - $`G(\tau)`$), following a policy $`\pi`$ (The policy induces a value function $`v^{\pi}(s_{t}) \doteq \mathds{E} [G_{t} | s_{t}]`$). <br>
 ```math
-J(\pi) = \sum_{t} E_{s_{t}, a_{t} \sim\pi_{\theta}}\bigg[r(s_{t}, a_{t})\bigg] = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
+J(\pi) \doteq \sum_{t} E_{s_{t}, a_{t} \sim\pi_{\theta}}\bigg[r(s_{t}, a_{t})\bigg] = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
 ```
 You can calculate the return using either: <br>  
 (1) discounted-RL setting <code>--return_type discount</code>: 
