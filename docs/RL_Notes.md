@@ -2,12 +2,12 @@
 
 The glucose regulation task is formulated as a continuous control problem. <br>
 
-The <b>Standard RL objective</b>: Maximise the expected sum of rewards (return - $`G(\tau)`$), following a policy $`\pi`$ (The policy induces a value function $`v^{\pi}(s_{t}) \doteq {E} [G_{t} | s_{t}]`$). <br>
+The <u><b>Standard RL objective</b></u>: Maximise the expected sum of rewards (return - $`G(\tau)`$), following a policy $`\pi`$ (The policy induces a value function $`v^{\pi}(s_{t}) \doteq {E} [G_{t} | s_{t}]`$). <br>
 ```math
 J(\pi) \doteq \sum_{t} E_{s_{t}, a_{t} \sim\pi_{\theta}}\bigg[r_{t}(s_{t}, a_{t})\bigg] = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
 ```
 You can calculate the return using either: <br>  
-(1) discounted-RL setting <code>--return_type discount</code>: 
+(1) discounted-RL setting (<code>--return_type discount</code>): 
 ```math
 G_{t} \doteq R_{t+1} + \gamma R_{t+2} + \gamma^{2}R_{t+3} + \cdots  = \sum_{k=0}^{\infty} \bigg[\gamma^{k}R_{t+k+1} \bigg], \gamma \in [0,1]
 ```
@@ -15,7 +15,7 @@ G_{t} \doteq R_{t+1} + \gamma R_{t+2} + \gamma^{2}R_{t+3} + \cdots  = \sum_{k=0}
 \hat{G_{t}} =R_{t+1} + \gamma R_{t+2} + \gamma^{2}R_{t+3} + \cdots  + \gamma^{t+n-1}\hat{v}^{\pi}(s_{t+n}).
 ```
 
-(2) Average-Reward-RL setting <code>--return_type average</code>:
+(2) Average-Reward-RL setting (<code>--return_type average</code>):
 ```math
 G_{t} \doteq R_{t+1} - r(\pi) + R_{t+2} - r(\pi) + R_{t+3} - r(\pi) + \cdots .
 ```
