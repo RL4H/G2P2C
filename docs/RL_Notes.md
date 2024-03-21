@@ -29,7 +29,7 @@ then the advantage function is, <br>
 ```math
 A^{\pi}(s_{t}, a_{t}) \doteq G_{t} - v^{\pi}(s_{t}).
 ```
-The <b>The Maximum Entropy RL Objective</b> (used in the SAC algorithm).
+The <b>The Maximum Entropy RL Objective</b> (used in the SAC algorithm where the discounted setting is used to calculate the returns).
 ```math
 J(\pi) \doteq \sum_{t=1}^{\infty} E_{s_{0}, a_{0:t-1}\sim\pi} \Bigg[\bigg(r_{t} + \alpha H\bigg(\pi(\cdot|s_{t})\bigg) \Bigg].
 ```
