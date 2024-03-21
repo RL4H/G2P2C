@@ -470,26 +470,3 @@ class G2P2C:
                     res, _, _ = validation_agents[i].rollout(self.policy)
                 print('Algo RAN Successfully')
                 exit()
-
-    def evaluate(self, args, patients, env_ids):
-        # setting up the testing arguments
-        testing_args = deepcopy(args)
-        testing_args.meal_amount = [45, 30, 85, 30, 80, 30]
-
-        # testing_args.meal_variance = [1e-8, 1e-8, 1e-8, 1e-8, 1e-8, 1e-8]
-        # testing_args.time_variance = [1e-8, 1e-8, 1e-8, 1e-8, 1e-8, 1e-8]
-        # testing_args.meal_prob = [1, -1, 1, -1, 1, -1]
-
-        testing_args.meal_variance = [5, 3, 5, 3, 10, 3]
-        testing_args.time_variance = [60, 30, 60, 30, 60, 30]
-        testing_args.meal_prob = [0.95, -1, 0.95, -1, 0.95, -1]
-
-        print('################## starting the validation trials #######################')
-        n_val_trials = 3 if args.debug == 1 else 500
-        validation_agents = [Worker(testing_args, 'testing', patients, env_ids, i + 6000, i + 6000, self.device) for i
-                             in range(n_val_trials)]
-        for i in range(n_val_trials):
-            res, _, _ = validation_agents[i].rollout(self.policy)
-        print('Algo RAN Successfully')
-        exit()
-

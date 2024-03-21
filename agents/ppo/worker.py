@@ -5,7 +5,7 @@ import pandas as pd
 from collections import deque
 from utils.pumpAction import Pump
 from utils.core import get_env, time_in_range, custom_reward, combined_shape, linear_scaling, inverse_linear_scaling
-from agents.ppo.core import Memory, StateSpace, composite_reward, BGPredBuffer, CGPredHorizon
+from agents.ppo.core import Memory, StateSpace, composite_reward
 
 
 class Worker:
@@ -27,8 +27,6 @@ class Worker:
         self.pump = Pump(self.args, patient_name=self.patient_name)
         self.std_basal = self.pump.get_basal()
         self.memory = Memory(self.args, device)
-        self.bgp_buffer = BGPredBuffer(self.args)
-        self.CGPredHorizon = CGPredHorizon(self.args)
         self.episode_history = np.zeros(combined_shape(self.max_epi_length, 13), dtype=np.float32)
         self.reinit_flag = False
         self.init_env()
@@ -64,9 +62,6 @@ class Worker:
 
     def rollout(self, policy):
         ri, alive_steps, normo, hypo, sev_hypo, hyper, lgbi, hgbi, sev_hyper = 0, 0, 0, 0, 0, 0, 0, 0, 0
-        aBGpred_rmse, a_horizonBG_rmse, horizon_rmse_count = -1, 0, 0
-        self.bgp_buffer.clear()
-        self.CGPredHorizon.reset()
         if self.worker_mode != 'training':  # fresh env for testing
             self.init_env()
         rollout_steps = self.update_timestep if self.worker_mode == 'training' else self.max_test_epi_len
@@ -76,15 +71,8 @@ class Worker:
             selected_action = policy_step['action'][0]
             rl_action, pump_action = self.pump.action(agent_action=selected_action,
                                                       prev_state=self.init_state, prev_info=None)
-            state, reward, is_done, info = self.env.step(pump_action)
-            reward = composite_reward(self.args, state=state.CGM, reward=reward)
-            self.bgp_buffer.update(policy_step['a_cgm'], policy_step['c_cgm'], state.CGM)
-            # calulate the horison pred error rmse
-            horizon_calc_done, err = self.CGPredHorizon.update(self.cur_state, self.feat, policy_step['action'][0],
-                                                               state.CGM, policy)
-            if horizon_calc_done:
-                a_horizonBG_rmse += err[0]
-                horizon_rmse_count += 1
+            state, _reward, is_done, info = self.env.step(pump_action)
+            reward = composite_reward(self.args, state=state.CGM, reward=_reward)
 
             if self.worker_mode == 'training':   # store -> rollout for training
                 scaled_cgm = linear_scaling(x=state.CGM, x_min=self.args.glucose_min, x_max=self.args.glucose_max)
@@ -111,11 +99,10 @@ class Worker:
                 df.to_csv(self.args.experiment_dir + '/' + self.worker_mode + '/data/logs_worker_' + str(self.worker_id) + '.csv',
                           mode='a', header=False, index=False)
                 alive_steps = self.counter
-                aBGpred_rmse, cBGpred_rmse = self.bgp_buffer.calc_simple_rmse()
                 normo, hypo, sev_hypo, hyper, lgbi, hgbi, ri, sev_hyper = time_in_range(df['cgm'], df['meal'], df['ins'],
                                                                              self.episode, self.counter, display=False)
                 self.save_log([[self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
-                                hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse]],
+                                hgbi, ri, sev_hyper, 0, 0]],
                               '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
 
                 if self.worker_mode == 'training':
@@ -123,13 +110,11 @@ class Worker:
                 else:
                     break  # stop rollout if this is a testing worker!
 
-        aBGpred_rmse, _ = self.bgp_buffer.calc_simple_rmse()
-        a_horizonBG_rmse = np.sqrt(a_horizonBG_rmse / horizon_rmse_count) if horizon_rmse_count != 0 else 0
         if self.worker_mode == 'training':
             data = self.memory.get()
         else:
             data = [ri, alive_steps, normo, hypo, sev_hypo, hyper, lgbi, hgbi, sev_hyper]
-        return data, aBGpred_rmse, a_horizonBG_rmse
+        return data
 
     def save_log(self, log_name, file_name):
         with open(self.args.experiment_dir + file_name + str(self.worker_id) + '.csv', 'a+') as f:
