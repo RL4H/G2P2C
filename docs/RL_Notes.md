@@ -1,7 +1,7 @@
 <h1>Short Notes: Implemented RL Algorithms</h1>
 
 The glucose regulation task is formulated as a continuous control problem. <br>
-The <b>Standard RL objective</b>: Maximise the expected sum of rewards (return - $`G(\tau)`$)<br>
+The <b>Standard RL objective</b>: Maximise the expected sum of rewards (return - $`G(\tau)`$), following a policy $`\pi`$. <br>
 ```math
 J(\pi) = \sum_{t} E_{s_{t}, a_{t} \sim\pi_{\theta}}\bigg[r(s_{t}, a_{t})\bigg] = E_{\tau \sim\pi_{\theta}} \bigg[ G(\tau) \bigg]. 
 ```
@@ -24,8 +24,10 @@ r(\pi) \doteq \lim_{h \to \infty}\frac{1}{h}\sum_{t=1}^{h} \mathbb{E}[R_{t}|S_{0
 ```math
 \hat{G_{t}} = R_{t+1} - r(\pi) + R_{t+2} - r(\pi) + R_{t+3} - r(\pi) + \cdots + R_{t+n} - r(\pi)  + \hat{v}^{\pi}(s_{t+n}).
 ```
-then the advantage 
-
+then the advantage function is, <br>
+```math
+A^{\pi}(s_{t}, a_{t}) \doteq G_{t} - v^{\pi}(s_{t})
+```
 <h2>A2C - Advantage Actor Critic</h2>
 
 ![A2C_Architecure](../img/base_architecture.png)
