@@ -8,30 +8,13 @@ import torch
 import torch.nn as nn
 import numpy as np
 from copy import deepcopy
-from utils.reward_normalizer import RewardNormalizer, update_mean_var_count_from_moments
 from agents.sac.worker import Worker
 from agents.sac.models import ActorCritic
 from collections import namedtuple, deque
-
+from agents.sac.core import ReplayMemory
 
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
-
-
-class ReplayMemory(object):
-
-    def __init__(self, capacity):
-        self.memory = deque([],maxlen=capacity)
-
-    def push(self, *args):
-        """Save a transition"""
-        self.memory.append(Transition(*args))
-
-    def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
-
-    def __len__(self):
-        return len(self.memory)
 
 
 class SAC:
@@ -69,7 +52,6 @@ class SAC:
         self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr=self.entropy_lr)
 
         self.sac_v2 = args.sac_v2
-
         self.weight_decay = 0
 
         ### SAC networks:

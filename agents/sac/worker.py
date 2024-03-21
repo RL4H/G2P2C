@@ -1,16 +1,13 @@
 import csv
-import gym
 import torch
-import itertools
 import numpy as np
 import pandas as pd
 from copy import deepcopy
 from collections import deque
 from utils.pumpAction import Pump
 from utils.core import get_env, time_in_range, custom_reward, combined_shape
-from agents.sac.core import Memory, StateSpace, composite_reward
-from agents.std_bb.BBController import BasalBolusController
-from utils.carb_counting import carb_estimate
+from utils.statespace import StateSpace
+from utils.reward_func import composite_reward
 
 
 class Worker:
@@ -32,7 +29,6 @@ class Worker:
         self.state_space = StateSpace(self.args)
         self.pump = Pump(self.args, patient_name=self.patient_name)
         self.std_basal = self.pump.get_basal()
-        self.memory = Memory(self.args, device)
         self.episode_history = np.zeros(combined_shape(self.max_epi_length, 14), dtype=np.float32)
         self.reinit_flag = False
         self.init_env()
@@ -81,8 +77,8 @@ class Worker:
             policy_step, mu, sigma = sac.get_action(self.cur_state, self.feat, worker_mode=self.worker_mode)
             selected_action = policy_step[0]
             rl_action, pump_action = self.pump.action(agent_action=selected_action, prev_state=self.init_state, prev_info=None)
-            state, reward, is_done, info = self.env.step(pump_action)
-            reward = composite_reward(self.args, state=state.CGM, reward=reward)
+            state, _reward, is_done, info = self.env.step(pump_action)
+            reward = composite_reward(self.args, state=state.CGM, reward=_reward)
             this_state = deepcopy(self.cur_state)
             this_feat = deepcopy(self.feat)
             done_flag = 1 if state.CGM <= 40 or state.CGM >= 600 else 0
@@ -99,10 +95,6 @@ class Worker:
                                    torch.as_tensor(self.cur_state, dtype=torch.float32, device=self.device).unsqueeze(0),
                                    torch.as_tensor(self.feat, dtype=torch.float32, device=self.device).unsqueeze(0),
                                    torch.as_tensor([done_flag], dtype=torch.float32, device=self.device))
-
-            # store -> rollout for training
-            # if self.worker_mode == 'training':
-            #     self.memory.store(this_state, this_feat, selected_action, reward, self.cur_state, self.feat, done_flag)
 
             self.episode_history[self.counter] = [self.episode, self.counter, state.CGM, info['meal'] * info['sample_time'],
                                                   pump_action, reward, rl_action, mu[0], sigma[0], 0, 0, info['day_hour'],

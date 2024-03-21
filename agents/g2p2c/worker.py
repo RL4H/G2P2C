@@ -1,11 +1,12 @@
 import csv
-import gym
 import numpy as np
 import pandas as pd
 from collections import deque
 from utils.pumpAction import Pump
 from utils.core import get_env, time_in_range, custom_reward, combined_shape, linear_scaling, inverse_linear_scaling
-from agents.g2p2c.core import Memory, StateSpace, composite_reward, BGPredBuffer, CGPredHorizon
+from agents.g2p2c.core import Memory, BGPredBuffer, CGPredHorizon
+from utils.statespace import StateSpace
+from utils.reward_func import composite_reward
 
 
 class Worker:
@@ -76,8 +77,8 @@ class Worker:
             selected_action = policy_step['action'][0]
             rl_action, pump_action = self.pump.action(agent_action=selected_action,
                                                       prev_state=self.init_state, prev_info=None)
-            state, reward, is_done, info = self.env.step(pump_action)
-            reward = composite_reward(self.args, state=state.CGM, reward=reward)
+            state, _reward, is_done, info = self.env.step(pump_action)
+            reward = composite_reward(self.args, state=state.CGM, reward=_reward)
             self.bgp_buffer.update(policy_step['a_cgm'], policy_step['c_cgm'], state.CGM)
             # calulate the horison pred error rmse
             horizon_calc_done, err = self.CGPredHorizon.update(self.cur_state, self.feat, policy_step['action'][0],

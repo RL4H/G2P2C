@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from utils import core
-from agents.g2p2c.core import composite_reward
+from utils.reward_func import composite_reward
 
 
 class FeatureExtractor(nn.Module):

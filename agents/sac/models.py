@@ -2,12 +2,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import core
-from agents.sac.core import composite_reward
-import math
 
 LOG_STD_MAX = 2
 LOG_STD_MIN = -20
+
 
 class FeatureExtractor(nn.Module):
     def __init__(self, args):
@@ -211,11 +209,11 @@ class ActorCritic(nn.Module):
         mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode='forward', worker_mode='training')
         return action.detach().cpu().numpy(), mu.detach().cpu().numpy(), sigma.detach().cpu().numpy()
 
-    def evaluate_policy(self, state, feat):  # evaluate batch
+    def evaluate_policy(self, state, feat):  # evaluate policy <batch>
         mu, sigma, action, log_prob = self.policy_net.forward(state, feat, mode='batch')
         return action, log_prob
 
-    def save(self, episode):
+    def save(self, episode):  # save checkpoints
         if self.sac_v2:
             policy_net_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_policy_net.pth'
             soft_q_net1_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_soft_q_net1.pth'

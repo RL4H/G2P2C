@@ -1,15 +1,10 @@
 import csv
-import gym
-import itertools
 import numpy as np
 import pandas as pd
 from collections import deque
 from utils.pumpAction import Pump
 from utils.core import get_env, time_in_range, custom_reward, combined_shape, linear_scaling, inverse_linear_scaling
 from agents.a2c.core import Memory, StateSpace, composite_reward
-from utils.carb_counting import carb_estimate
-
-from agents.std_bb.BBController import BasalBolusController
 
 
 class Worker:
