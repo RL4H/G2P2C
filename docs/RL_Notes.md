@@ -79,7 +79,18 @@ Planning Phase <br>
 ```math
 L^{plan}(\theta) = \hat{E}_{t}\Bigg[ \Bigg. -log \bigg(\pi_{\theta}(a^{*}_{t}|s_{t}) \bigg)\Bigg].
 ```
-
+Reference:
+```
+@article{hettiarachchi2024g2p2c,
+  title={G2P2C—A modular reinforcement learning algorithm for glucose control by glucose prediction and planning in Type 1 Diabetes},
+  author={Hettiarachchi, Chirath and Malagutti, Nicolo and Nolan, Christopher J and Suominen, Hanna and Daskalaki, Elena},
+  journal={Biomedical Signal Processing and Control},
+  volume={90},
+  pages={105839},
+  year={2024},
+  publisher={Elsevier}
+}
+```
 
 <h2>SAC - Soft Actor Critic</h2>
 
