@@ -9,12 +9,10 @@ from torch import nn
 
 class RunningMeanStd(nn.Module):
     # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
-    def __init__(
-        self,
-        epsilon: "initial count (with mean=0 ,var=1)" = 1e-4,
-        shape: "unbatched shape of data" = (),
-        distributed: "whether to allreduce stats" = True,
-    ):
+    def __init__(self, epsilon = 1e-4, shape = (), distributed = True):
+        # epsilon: "initial count (with mean=0 ,var=1)" = 1e-4,
+        # shape: "unbatched shape of data" = (),
+        # distributed: "whether to allreduce stats" = True,
         super().__init__()
         self.register_buffer("mean", th.zeros(shape))
         self.register_buffer("var", th.ones(shape))
@@ -104,13 +102,11 @@ class RewardNormalizer:
         return (reward - self.ret_rms.mean)   #/ th.sqrt(self.ret_rms.var + self.epsilon)
 
 
-def backward_discounted_sum(
-    *,
-    prevret: "(th.Tensor[1, float]) value predictions",
-    reward: "(th.Tensor[1, float]) reward",
-    first: "(th.Tensor[1, bool]) mark beginning of episodes",
-    gamma: "(float)",
-):
+def backward_discounted_sum(prevret, reward, first, gamma):
+    # prevret: "(th.Tensor[1, float]) value predictions",
+    # reward: "(th.Tensor[1, float]) reward",
+    # first: "(th.Tensor[1, bool]) mark beginning of episodes",
+    # gamma: "(float)",
     first = first.to(dtype=th.float32)
     assert first.dim() == 2
     _nenv, nstep = reward.shape
@@ -120,14 +116,12 @@ def backward_discounted_sum(
     return ret
 
 
-def backward_average_sum(
-    *,
-    prevret: "(th.Tensor[1, float]) value predictions",
-    reward: "(th.Tensor[1, float]) reward",
-    first: "(th.Tensor[1, bool]) mark beginning of episodes",
-    gamma: "(float)",
-    ret_mean: "(float)",
-):
+def backward_average_sum(prevret, reward, first, gamma, ret_mean):
+    # prevret: "(th.Tensor[1, float]) value predictions",
+    # reward: "(th.Tensor[1, float]) reward",
+    # first: "(th.Tensor[1, bool]) mark beginning of episodes",
+    # gamma: "(float)",
+    # ret_mean: "(float)",
     first = first.to(dtype=th.float32)
     assert first.dim() == 2
     _nenv, nstep = reward.shape
