@@ -9,6 +9,7 @@ import math
 LOG_STD_MAX = 2
 LOG_STD_MIN = -20
 
+
 class FeatureExtractor(nn.Module):
     def __init__(self, args):
         super(FeatureExtractor, self).__init__()
@@ -106,7 +107,7 @@ class ActionModule(nn.Module):
 
         dst = self.normalDistribution(mu, action_std)
         if worker_mode == 'training':
-            gaussian_action = mu + PolicyNoise(mu=0, sigma=sigma)#dst.rsample()
+            gaussian_action = mu + self.normalDistribution(0, action_std).rsample()  # dst.rsample()TODO apply as a policy noise class
         else:
             gaussian_action = mu
 
@@ -114,8 +115,8 @@ class ActionModule(nn.Module):
 
         # calc log_prob
         # openai implementation
-        logp_pi = dst.log_prob(gaussian_action[0])  #.sum(axis=-1)
-        logp_pi -= (2 * (np.log(2) - gaussian_action[0] - F.softplus(-2 * gaussian_action[0])))  #.sum(axis=1)
+        logp_pi = dst.log_prob(gaussian_action[0])  # .sum(axis=-1)
+        logp_pi -= (2 * (np.log(2) - gaussian_action[0] - F.softplus(-2 * gaussian_action[0])))  # .sum(axis=1)
         # SAC paper implementation
         # log_prob = dst.log_prob(gaussian_action[0]) - torch.log(1 - action[0] ** 2 + 1e-6)
 
@@ -230,7 +231,6 @@ class ActorCritic(nn.Module):
         mu, sigma, action, log_prob = self.policy_net.forward(state, feat, mode='batch', worker_mode='no noise')
         return action, log_prob
 
-
     def save(self, episode):
         # if self.sac_v2:
         #     policy_net_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_policy_net.pth'
@@ -268,6 +268,7 @@ def NormedLinear(*args, scale=1.0):
     out.weight.data *= scale / out.weight.norm(dim=1, p=2, keepdim=True)
     return out
 
+
 class PolicyNoise():
     # TODO - Implement noise decay and/or other noise models (eg. Ornstein-Uhlenbeck)
     def __init__(self, mu, sigma):
@@ -275,4 +276,4 @@ class PolicyNoise():
         self.sigma = sigma
 
     def __call__(self):
-        return np.random.normal(self.mu, self.sigma)
+        return torch.distributions.Normal(self.mu, self.sigma)
