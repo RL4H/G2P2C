@@ -5,7 +5,7 @@
 [![capsml](https://img.shields.io/badge/Web-CAPSML-red)](https://capsml.com/)
 [![python_sup](https://img.shields.io/badge/python-3.10.12-black.svg?)](https://www.python.org/downloads/release/python-31012/)
 [![CI](https://github.com/chirathyh/G2P2C/actions/workflows/python-app.yml/badge.svg)](https://github.com/chirathyh/G2P2C/actions/workflows/python-app.yml)
-[![DOI](https://img.shields.io/badge/DOI-10.1016/j.bspc.2023.105839-blue)](https://www.sciencedirect.com/science/article/pii/S1746809423012727)
+[![DOI](https://img.shields.io/badge/DOI-10.25911/CXAQ-3151-blue)](http://hdl.handle.net/1885/305591)
 
 **G2P2C** is a project to develop Reinforcement Learning (RL)-based Artificial Pancreas Systems (APS), with the aim to automate treatment in Type 1 Diabetes (T1D). 
 
