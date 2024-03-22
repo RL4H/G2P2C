@@ -181,36 +181,37 @@ class Memory:
         self.gamma = args.gamma
         self.lambda_ = args.lambda_
         self.handcrafted_features = args.n_handcrafted_features
-
         self.observation = np.zeros(core.combined_shape(self.size, (self.feature_hist, self.features)), dtype=np.float32)
         self.state_features = np.zeros(core.combined_shape(self.size, (1, self.handcrafted_features)), dtype=np.float32)
         self.actions = np.zeros(self.size, dtype=np.float32)
         self.rewards = np.zeros(self.size, dtype=np.float32)
-        self.next_observation = np.zeros(core.combined_shape(self.size, (self.feature_hist, self.features)), dtype=np.float32)
-        self.next_state_features = np.zeros(core.combined_shape(self.size, (1, self.handcrafted_features)), dtype=np.float32)
-        self.done = np.zeros(self.size, dtype=np.bool_)
+        self.state_values = np.zeros(self.size + 1, dtype=np.float32)
+        self.logprobs = np.zeros(self.size, dtype=np.float32)
+        self.first_flag = np.zeros(self.size + 1, dtype=np.bool_)
+        self.cgm_target = np.zeros(self.size, dtype=np.float32)
         self.ptr, self.path_start_idx, self.max_size = 0, 0, self.size
 
-    def store(self, obs, features, act, rew, next_obs, next_features, done):
+    def store(self, obs, features, act, rew, val, logp, cgm_target, counter):
         assert self.ptr < self.max_size
         self.observation[self.ptr] = obs
         self.state_features[self.ptr] = features
         self.actions[self.ptr] = act
         self.rewards[self.ptr] = rew
-        self.next_observation[self.ptr] = next_obs
-        self.next_state_features[self.ptr] = next_features
-        self.done[self.ptr] = True if done == 1 else False
+        self.state_values[self.ptr] = val
+        self.logprobs[self.ptr] = logp
+        self.first_flag[self.ptr] = True if counter == 0 else False
+        self.cgm_target[self.ptr] = cgm_target
         self.ptr += 1
 
-    # def finish_path(self, final_v):
-    #     self.next_observation[self.ptr] = final_v
-    #     self.first_flag[self.ptr] = False
+    def finish_path(self, final_v):
+        self.state_values[self.ptr] = final_v
+        self.first_flag[self.ptr] = False
 
     def get(self):
         assert self.ptr == self.max_size
         self.ptr, self.path_start_idx = 0, 0
-        data = dict(obs=self.observation, feat=self.state_features, act=self.actions, next_state=self.next_observation,
-                    next_feat=self.next_state_features, done=self.done, reward=self.rewards)
+        data = dict(obs=self.observation, feat=self.state_features, act=self.actions, v_pred=self.state_values,
+                    logp=self.logprobs, first_flag=self.first_flag, reward=self.rewards, cgm_target=self.cgm_target)
         return {k: torch.as_tensor(v, dtype=torch.float32, device=self.device) for k, v in data.items()}
 
 
@@ -292,30 +293,6 @@ class StateSpace:
         return self.state, handcraft_features
 
 
-def exponential_reward(args, prev_state=None, new_state=None):
-    prev_sum, new_sum = 0, 0
-    size = len(new_state)
-    for t in range(0, size):
-        x = t+1
-        factor = 1  # math.exp((x-size)/10)
-        prev_sum += (factor * composite_reward(args, state=prev_state[t]))
-        new_sum += (factor * composite_reward(args, state=new_state[t]))
-    return new_sum - prev_sum
-
-def differential_reward(args, latest_cgm=None, start_cgm=None, reward=None):
-    latest_reward = composite_reward(args, state=latest_cgm, reward=reward)
-    start_rew = composite_reward(args, state=start_cgm, reward=reward)
-    return latest_reward - start_rew
-
-def get_IS_Rew(state, IS):
-    REWARD_FACTOR = 0.1
-    EXP_FACTOR = 1
-    reward = custom_reward([state])
-    IS_val = (1 -(math.exp(EXP_FACTOR * (IS - 0.5)))) if IS < 0 else (1 + IS)
-    reward = (reward * IS_val) if state > 112.5 else (reward * (1 / max(IS_val, 1e-5)))
-    reward = reward + (REWARD_FACTOR * custom_reward([state]))
-    return reward
-
 def composite_reward(args, state=None, reward=None):
     MAX_GLUCOSE = 600
     if reward == None:
@@ -328,14 +305,6 @@ def composite_reward(args, state=None, reward=None):
         reward = 0
     else:
         reward = reward
-    return reward
-
-def traj_reward(args, bg_hist, k):
-    # reward = custom_reward_traj(bg_hist, k)
-    reward = 0
-    for i in bg_hist:
-        r = custom_reward([i])
-        reward += composite_reward(args, state=i, reward=r, steps=None)
     return reward
 
 
