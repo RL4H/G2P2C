@@ -1,6 +1,9 @@
 ![header](img/header.png)
 <h1>G2P2C: Reinforcement Learning based Artificial Pancreas Systems.</h1>
 
+![license](https://img.shields.io/badge/License-MIT-yellow.svg)
+[![capsml](https://img.shields.io/badge/Web-CAPSML-red)](https://capsml.com/)
+[![python_sup](https://img.shields.io/badge/python-3.10.12-black.svg?)](https://www.python.org/downloads/release/python-31012/)
 [![CI](https://github.com/chirathyh/G2P2C/actions/workflows/python-app.yml/badge.svg)](https://github.com/chirathyh/G2P2C/actions/workflows/python-app.yml)
 
 **G2P2C** is a project to develop Reinforcement Learning (RL)-based Artificial Pancreas Systems (APS), with the aim to automate treatment in Type 1 Diabetes (T1D). 
@@ -50,7 +53,7 @@ Using the project
 
 <h4>Installation</h4>
 
-* Create and activate a Python3.8 virtual environment.
+* Create and activate a Python3.10.12 virtual environment.
 * Clone the repository: <code>git clone git@github.com:chirathyh/G2P2C.git</code>.<br>
 * Go to the project folder (G2P2C): <code>cd G2P2C</code>
 * Install the required Python libraries <code>requirements.txt</code>. 
