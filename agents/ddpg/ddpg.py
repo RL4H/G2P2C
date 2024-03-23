@@ -13,7 +13,7 @@ from agents.ddpg.worker import Worker
 from agents.ddpg.models import ActorCritic
 from collections import namedtuple, deque
 
-#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --seed 3 --debug 1
+#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --seed 3 --debug 0
 
 
 Transition = namedtuple('Transition',
@@ -222,10 +222,11 @@ class DDPG:
                 p.requires_grad = False
 
             self.policy_optimizer.zero_grad()
-            min_qf_pi = torch.min(self.ddpg.soft_q_net1(cur_state_batch, cur_feat_batch, actions_pi),
-                                  self.ddpg.soft_q_net2(cur_state_batch, cur_feat_batch, actions_pi))
-
-            policy_loss = (-1 * self.ddpg.policy_net(cur_state_batch, cur_feat_batch, actions_pi)).mean()
+            # min_qf_pi = torch.min(self.ddpg.soft_q_net1(cur_state_batch, cur_feat_batch, actions_pi),
+            #                       self.ddpg.soft_q_net2(cur_state_batch, cur_feat_batch, actions_pi))
+            policy_action, _ = self.ddpg.evaluate_policy(cur_state_batch, cur_feat_batch)
+            policy_loss = self.ddpg.value_net(cur_state_batch, cur_feat_batch, policy_action)
+            policy_loss = (-1 * policy_loss).mean()
             policy_loss.backward()
             pi_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.policy_net.parameters(), 10)
             self.policy_optimizer.step()
