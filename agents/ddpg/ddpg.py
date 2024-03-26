@@ -13,7 +13,7 @@ from agents.ddpg.worker import Worker
 from agents.ddpg.models import ActorCritic
 from collections import namedtuple, deque
 
-#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --seed 3 --debug 0
+#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --noise_std 1 --seed 3 --debug 0
 
 
 Transition = namedtuple('Transition',
