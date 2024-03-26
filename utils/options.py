@@ -77,6 +77,7 @@ class Options:
         self.parser.add_argument('--gamma', type=float, default=0.99, help='1 if continous')
         self.parser.add_argument('--lambda_', type=float, default=0.95, help='')
         self.parser.add_argument('--max_test_epi_len', type=int, default=1, help='n time max ep trained.')
+        self.parser.add_argument('--noise_std', type=float, default=0.1, help='Standard deviation for exploratory noise')
 
         # ppo params
         self.parser.add_argument('--eps_clip', type=float, default=0.2, help=' (Usually small, 0.1 to 0.3.) 0.2')

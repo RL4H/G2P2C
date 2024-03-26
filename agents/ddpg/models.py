@@ -95,6 +95,7 @@ class ActionModule(nn.Module):
         self.mu = nn.Linear(self.last_hidden, self.output)
         self.sigma = nn.Linear(self.last_hidden, self.output)
         self.normalDistribution = torch.distributions.Normal
+        self.noise_std = args.noise_std
 
     def forward(self, extract_states, worker_mode='training'):
         fc_output1 = F.relu(self.fc_layer1(extract_states))
@@ -107,11 +108,12 @@ class ActionModule(nn.Module):
 
         dst = self.normalDistribution(mu, action_std)
         if worker_mode == 'training':
-            gaussian_action = mu + self.normalDistribution(0, action_std).rsample()  # dst.rsample()TODO apply as a policy noise class
+            gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()TODO apply as a policy noise class
         else:
             gaussian_action = mu
 
         action = torch.tanh(gaussian_action)
+
 
         # calc log_prob
         # openai implementation
