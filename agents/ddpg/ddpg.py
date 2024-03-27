@@ -13,7 +13,7 @@ from agents.ddpg.worker import Worker
 from agents.ddpg.models import ActorCritic
 from collections import namedtuple, deque
 
-#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --noise_std 1 --seed 3 --debug 0
+#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.1 --noise_model normal_dist --seed 1 --debug 1
 
 
 Transition = namedtuple('Transition',
@@ -174,6 +174,8 @@ class DDPG:
             value_loss.backward()
             coeff_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.value_net.parameters(), self.grad_clip)
             self.value_optimizer.step()
+            # self.ddpg.policy_net.ActionModule.policy_noise.reset()
+            # self.ddpg.policy_net_target.ActionModule.policy_noise.reset()
             cl += value_loss.detach()
 
             # if not self.sac_v2:
@@ -303,6 +305,11 @@ class DDPG:
         # for param_group in self.soft_q_optimizer2.param_groups:
         #     param_group['lr'] = self.soft_q_lr
 
+    def decay_noise_std(self):
+        self.ddpg.policy_net.ActionModule.noise_std = self.ddpg.policy_net.ActionModule.noise_std / 10
+        self.ddpg.policy_net_target.ActionModule.noise_std = self.ddpg.policy_net_target.ActionModule.noise_std / 10
+
+
     def run(self, args, patients, env_ids, seed):
         MAX_INTERACTIONS = 4000 if args.debug == 1 else 800000
         LR_DECAY_INTERACTIONS = 2000 if args.debug == 1 else 600000
@@ -349,6 +356,7 @@ class DDPG:
             self.completed_interactions += (self.n_step * self.n_training_workers)
             if (self.completed_interactions - last_lr_update) > LR_DECAY_INTERACTIONS:
                 self.decay_lr()
+                self.decay_noise_std()
                 last_lr_update = self.completed_interactions
 
             if self.completed_interactions > MAX_INTERACTIONS:

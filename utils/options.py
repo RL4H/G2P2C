@@ -77,7 +77,8 @@ class Options:
         self.parser.add_argument('--gamma', type=float, default=0.99, help='1 if continous')
         self.parser.add_argument('--lambda_', type=float, default=0.95, help='')
         self.parser.add_argument('--max_test_epi_len', type=int, default=1, help='n time max ep trained.')
-        self.parser.add_argument('--noise_std', type=float, default=0.1, help='Standard deviation for exploratory noise')
+
+
 
         # ppo params
         self.parser.add_argument('--eps_clip', type=float, default=0.2, help=' (Usually small, 0.1 to 0.3.) 0.2')
@@ -119,13 +120,23 @@ class Options:
         self.parser.add_argument('--pretrain_period', type=int, default=5760, help='')
 
         # sac - 2023 implementation
-        self.parser.add_argument('--soft_tau', type=float, default=0.005, help='')
+        # self.parser.add_argument('--soft_tau', type=float, default=0.005, help='')
         self.parser.add_argument('--replay_buffer_size', type=int, default=1000, help='')
         self.parser.add_argument('--sample_size', type=int, default=1000, help='')
         self.parser.add_argument('--sac_v2', type=bool, default=False, help='')
 
         self.parser.add_argument('--discrete_actions', type=bool, default=False, help='')
         # self.parser.add_argument('--n_discrete_actions', type=int, default=50, help='')
+
+        # DDPG - 2024 implementation
+        self.parser.add_argument('--noise_model', type=str, default='normal_dist',
+                                 help='Noise model for applying exploratory noise to policy')
+        self.parser.add_argument('--noise_std', type=float, default=0.01,
+                                 help='Standard deviation for exploratory noise')
+        self.parser.add_argument('--soft_tau', type=float, default=0.005, help='Tau for soft update')
+        self.parser.add_argument('--pi_lr', type=float, default=1e-4 * 3, help='Policy learning rate')
+        self.parser.add_argument('--vf_lr', type=float, default=1e-4 * 3, help='Value function learning rate')
+
 
         # fixed "HARD" benchmark scenario
         # self.parser.add_argument('--meal_prob', type=list, default=[1, -1, 1, -1, 1, -1], help='')

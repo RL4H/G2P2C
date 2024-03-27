@@ -39,8 +39,8 @@ def set_args(args):
     args.n_training_workers = 16 if args.debug == 0 else 2
     args.n_testing_workers = 20 if args.debug == 0 else 2
     args.n_pi_epochs = 1  # can be used to increase number of epochs for all networks updates.
-    args.pi_lr = 1e-4 * 3  # 1e-4 * 3
-    args.vf_lr = 1e-4 * 3  # 1e-4 * 3
+    # args.pi_lr = 1e-4 * 3  # 1e-4 * 3
+    # args.vf_lr = 1e-4 * 3  # 1e-4 * 3
     args.grad_clip = 20
 
     ### todo: refctaor - unused below

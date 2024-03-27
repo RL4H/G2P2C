@@ -95,7 +95,10 @@ class ActionModule(nn.Module):
         self.mu = nn.Linear(self.last_hidden, self.output)
         self.sigma = nn.Linear(self.last_hidden, self.output)
         self.normalDistribution = torch.distributions.Normal
+        self.noise_model = args.noise_model
         self.noise_std = args.noise_std
+        self.policy_noise = ExploratoryNoise(0, self.noise_std, noise_model=self.noise_model)
+
 
     def forward(self, extract_states, worker_mode='training'):
         fc_output1 = F.relu(self.fc_layer1(extract_states))
@@ -105,15 +108,15 @@ class ActionModule(nn.Module):
         sigma = self.sigma(fc_output)  # * 0.66, + 1e-5
         log_std = torch.clamp(sigma, LOG_STD_MIN, LOG_STD_MAX)
         action_std = torch.exp(log_std)
-
         dst = self.normalDistribution(mu, action_std)
+
         if worker_mode == 'training':
-            gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()TODO apply as a policy noise class
+            # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
+            gaussian_action = mu + self.policy_noise.get_noise()
         else:
             gaussian_action = mu
 
         action = torch.tanh(gaussian_action)
-
 
         # calc log_prob
         # openai implementation
@@ -271,11 +274,38 @@ def NormedLinear(*args, scale=1.0):
     return out
 
 
-class PolicyNoise():
-    # TODO - Implement noise decay and/or other noise models (eg. Ornstein-Uhlenbeck)
-    def __init__(self, mu, sigma):
+# class PolicyNoise():
+#     def __init__(self, mu, sigma):
+#         self.mu = mu
+#         self.sigma = sigma
+#
+#     def __call__(self):
+#         return torch.distributions.Normal(self.mu, self.sigma)
+
+
+class ExploratoryNoise:
+    # OU noise applied same as default paramaters as Lillicrap et al. (2016)
+    def __init__(self, mu, sigma, noise_model='normal_dist', theta=.15, dt=1e-2, x0=None):
+        self.theta = theta
         self.mu = mu
         self.sigma = sigma
+        self.dt = dt
+        self.x0 = x0
+        self.noise_model = noise_model
+        self.reset()
 
-    def __call__(self):
-        return torch.distributions.Normal(self.mu, self.sigma)
+    def get_noise(self):
+        if self.noise_model == 'normal_dist':
+            return torch.distributions.Normal(0, self.sigma).rsample()
+
+        elif self.noise_model == 'ou_noise':
+            x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt \
+                + self.sigma * np.sqrt(self.dt) * np.random.normal()
+            self.x_prev = x
+            return x
+
+        else:
+            raise ValueError(self.noise_model + " not valid noise type for policy exploration")
+
+    def reset(self):
+        self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
