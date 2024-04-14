@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from copy import deepcopy
 from utils import core
 from agents.ddpg.core import composite_reward
 import math
@@ -112,16 +113,17 @@ class ActionModule(nn.Module):
 
         if worker_mode == 'training':
             # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
-            gaussian_action = mu + self.policy_noise.get_noise()
+            action = torch.tanh(mu) + self.policy_noise.get_noise()
+            action = torch.clamp(action, min=-1, max=1)
         else:
-            gaussian_action = mu
+            action = torch.tanh(mu)
 
-        action = torch.tanh(gaussian_action)
+        # action = torch.tanh(gaussian_action)
 
         # calc log_prob
         # openai implementation
-        logp_pi = dst.log_prob(gaussian_action[0])  # .sum(axis=-1)
-        logp_pi -= (2 * (np.log(2) - gaussian_action[0] - F.softplus(-2 * gaussian_action[0])))  # .sum(axis=1)
+        logp_pi = 0#dst.log_prob(gaussian_action[0])  # .sum(axis=-1)
+        # logp_pi -= (2 * (np.log(2) - gaussian_action[0] - F.softplus(-2 * gaussian_action[0])))  # .sum(axis=1)
         # SAC paper implementation
         # log_prob = dst.log_prob(gaussian_action[0]) - torch.log(1 - action[0] ** 2 + 1e-6)
 
@@ -165,7 +167,7 @@ class PolicyNetwork(nn.Module):
 
     def forward(self, s, feat, mode='forward', worker_mode='training'):
         extract_states, lstmOut = self.FeatureExtractor.forward(s, feat, mode)
-        mu, sigma, action, log_prob = self.ActionModule.forward(extract_states, worker_mode='training')
+        mu, sigma, action, log_prob = self.ActionModule.forward(extract_states, worker_mode=worker_mode)
         return mu, sigma, action, log_prob
 
 
@@ -201,7 +203,7 @@ class ActorCritic(nn.Module):
         self.is_testing_worker = False
         # self.sac_v2 = args.sac_v2
         self.policy_net = PolicyNetwork(args, device)
-        self.policy_net_target = PolicyNetwork(args, device)
+        self.policy_net_target = deepcopy(self.policy_net) #PolicyNetwork(args, device)
 
         # self.soft_q_net1 = QNetwork(args, device)
         # self.soft_q_net2 = QNetwork(args, device)
@@ -214,7 +216,7 @@ class ActorCritic(nn.Module):
         #     self.value_net_target = ValueNetwork(args, device)
 
         self.value_net = QNetwork(args, device)
-        self.value_net_target = QNetwork(args, device)
+        self.value_net_target = deepcopy(self.value_net)#QNetwork(args, device)
 
     def get_action(self, s, feat, mode='forward', worker_mode='training'):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
@@ -234,6 +236,10 @@ class ActorCritic(nn.Module):
 
     def evaluate_policy_no_noise(self, state, feat):  # evaluate batch
         mu, sigma, action, log_prob = self.policy_net.forward(state, feat, mode='batch', worker_mode='no noise')
+        return action, log_prob
+
+    def evaluate_target_policy_no_noise(self, state, feat):  # evaluate batch
+        mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='no noise')
         return action, log_prob
 
     def save(self, episode):

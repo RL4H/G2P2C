@@ -13,7 +13,10 @@ from agents.ddpg.worker import Worker
 from agents.ddpg.models import ActorCritic
 from collections import namedtuple, deque
 
-#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.1 --noise_model normal_dist --seed 1 --debug 1
+#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.001 --noise_model normal_dist --seed 1 --debug 1
+
+#python run_RL_agent.py --agent ddpg --folder_id LR/1e-5/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-5 --vf_lr 1e-5 --seed 1 --debug 0
+#python run_RL_agent.py --agent ddpg --folder_id troubleshoot_20kBuffer_OUNoise/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-4 --noise_model ou_noise --noise_std 1e-3  --seed 1 --debug 0
 
 
 Transition = namedtuple('Transition',
@@ -24,9 +27,15 @@ class ReplayMemory(object):
 
     def __init__(self, capacity):
         self.memory = deque([], maxlen=capacity)
+        self.capacity = capacity
 
     def push(self, *args):
         """Save a transition"""
+        # if len(self.memory) + len(Transition(*args)) >= self.capacity:
+        #     # Randomly remove one element if memory is full
+        #     for i in range(len(Transition(*args))):
+        #         remove_index = random.randint(0, len(self.memory) - 1)
+        #         self.memory.remove(self.memory[remove_index])
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size):
@@ -122,9 +131,8 @@ class DDPG:
         print(
             'Value Parameters: {}'.format(sum(p.numel() for p in self.ddpg.value_net.parameters() if p.requires_grad)))
 
-        self.save_log([['coeff_loss', 'policy_loss', 'q1_loss', 'q2_loss', 'ent_coeff', 'pi_grad', 'q1_grad', 'g2_grad',
-                        'coeff_grad']], '/model_log')
-        self.model_logs = torch.zeros(9, device=self.device)
+        self.save_log([['policy_loss', 'value_loss', 'pi_grad', 'val_grad']], '/model_log')
+        self.model_logs = torch.zeros(4, device=self.device)
         self.save_log([['ri', 'alive_steps', 'normo', 'hypo', 'sev_hypo', 'hyper', 'lgbi', 'hgbi',
                         'sev_hyper', 'rollout', 'trial']], '/evaluation_log')
         self.save_log([['status', 'rollout', 't_rollout', 't_update', 't_test']], '/experiment_summary')
@@ -145,7 +153,7 @@ class DDPG:
         cl, pl, ql1, ql2, count = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device), \
             torch.zeros(1, device=self.device), \
             torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
-        pi_grad, q1_grad, q2_grad, coeff_grad = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device), \
+        pi_grad, val_grad, q2_grad, coeff_grad = torch.zeros(1, device=self.device), torch.zeros(1, device=self.device), \
             torch.zeros(1, device=self.device), torch.zeros(1, device=self.device)
 
         for i in range(self.train_pi_iters):
@@ -160,23 +168,29 @@ class DDPG:
             next_feat_batch = torch.cat(batch.next_feat)
             done_batch = torch.cat(batch.done).unsqueeze(1)
 
-            actions_pi, log_prob = self.ddpg.evaluate_policy(cur_state_batch, cur_feat_batch)
+            #actions_pi, log_prob = self.ddpg.evaluate_policy(cur_state_batch, cur_feat_batch)
             # self.entropy_coef = torch.exp(self.log_ent_coef.detach()) if self.sac_v2 else 0.001
 
             # value network update
-            new_action, next_log_prob = self.ddpg.evaluate_policy_no_noise(next_state_batch, next_feat_batch)
+
+            new_action, next_log_prob = self.ddpg.evaluate_target_policy_no_noise(next_state_batch, next_feat_batch)
             next_values = self.ddpg.value_net_target(next_state_batch, next_feat_batch, new_action)
             target_value = (reward_batch + (self.gamma * (1 - done_batch) * next_values))
-            predicted_value = self.ddpg.value_net(cur_state_batch, cur_feat_batch, actions_pi)
 
-            value_loss = self.value_criterion(target_value, predicted_value.detach())
+            predicted_value = self.ddpg.value_net(cur_state_batch, cur_feat_batch, actions_batch)
 
+            value_loss = self.value_criterion(target_value.detach(), predicted_value)
+
+            self.value_optimizer.zero_grad()
             value_loss.backward()
-            coeff_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.value_net.parameters(), self.grad_clip)
             self.value_optimizer.step()
             # self.ddpg.policy_net.ActionModule.policy_noise.reset()
             # self.ddpg.policy_net_target.ActionModule.policy_noise.reset()
             cl += value_loss.detach()
+
+            for param in self.ddpg.value_net.parameters():
+                if param.grad is not None:
+                    val_grad += param.grad.sum()
 
             # if not self.sac_v2:
             #     self.value_optimizer.zero_grad()
@@ -218,20 +232,25 @@ class DDPG:
 
             # actor update : next q values
             # freeze value networks save compute: ref: openai:
+
             for p in self.ddpg.value_net.parameters():
                 p.requires_grad = False
             for p in self.ddpg.value_net_target.parameters():
                 p.requires_grad = False
 
-            self.policy_optimizer.zero_grad()
             # min_qf_pi = torch.min(self.ddpg.soft_q_net1(cur_state_batch, cur_feat_batch, actions_pi),
             #                       self.ddpg.soft_q_net2(cur_state_batch, cur_feat_batch, actions_pi))
-            policy_action, _ = self.ddpg.evaluate_policy(cur_state_batch, cur_feat_batch)
+
+            policy_action, _ = self.ddpg.evaluate_policy_no_noise(cur_state_batch, cur_feat_batch)
             policy_loss = self.ddpg.value_net(cur_state_batch, cur_feat_batch, policy_action)
             policy_loss = (-1 * policy_loss).mean()
+
+            self.policy_optimizer.zero_grad()
             policy_loss.backward()
-            pi_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.policy_net.parameters(), 10)
             self.policy_optimizer.step()
+
+            pl += policy_loss.detach()
+            pi_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.policy_net.parameters(), 10)
 
             # save compute: ref: openai:
             for p in self.ddpg.value_net.parameters():
@@ -284,13 +303,9 @@ class DDPG:
 
         self.model_logs[0] = cl  # value loss or coeff loss
         self.model_logs[1] = pl
-        self.model_logs[2] = ql1
-        self.model_logs[3] = ql2
-        self.model_logs[4] = 0#self.entropy_coef
-        self.model_logs[5] = pi_grad
-        self.model_logs[6] = q1_grad
-        self.model_logs[7] = q2_grad
-        self.model_logs[8] = coeff_grad  # value loss grad or coeff loss grad
+        self.model_logs[2] = pi_grad
+        self.model_logs[3] = val_grad
+
         self.save_log([self.model_logs.detach().cpu().flatten().numpy()], '/model_log')
         print('success')
 
@@ -338,6 +353,7 @@ class DDPG:
                 self.update()
             t2 = time.time()
             self.ddpg.save(rollout)
+            # self.ddpg.policy_net.ActionModule.policy_noise.reset()
 
             # testing
             t5 = time.time()
@@ -356,7 +372,7 @@ class DDPG:
             self.completed_interactions += (self.n_step * self.n_training_workers)
             if (self.completed_interactions - last_lr_update) > LR_DECAY_INTERACTIONS:
                 self.decay_lr()
-                self.decay_noise_std()
+                # self.decay_noise_std()
                 last_lr_update = self.completed_interactions
 
             if self.completed_interactions > MAX_INTERACTIONS:
