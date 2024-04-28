@@ -9,8 +9,8 @@ import torch.nn as nn
 import numpy as np
 from copy import deepcopy
 from utils.reward_normalizer import RewardNormalizer, update_mean_var_count_from_moments
-from agents.ddpg.worker import Worker
-from agents.ddpg.models import ActorCritic
+from agents.td3.worker import Worker
+from agents.td3.models import ActorCritic
 from collections import namedtuple, deque
 
 #python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.001 --noise_model normal_dist --seed 1 --debug 1
@@ -139,7 +139,7 @@ class TD3:
         # print('Q1 Parameters: {}'.format(sum(p.numel() for p in self.ddpg.soft_q_net1.parameters() if p.requires_grad)))
         # print('Q2 Parameters: {}'.format(sum(p.numel() for p in self.ddpg.soft_q_net2.parameters() if p.requires_grad)))
         print(
-            'Value Parameters: {}'.format(sum(p.numel() for p in self.td3.value_net.parameters() if p.requires_grad)))
+            'Value Parameters: {}'.format(sum(p.numel() for p in self.td3.value_net1.parameters() if p.requires_grad)))
 
         self.save_log([['policy_loss', 'value_loss', 'pi_grad', 'val_grad']], '/model_log')
         self.model_logs = torch.zeros(4, device=self.device)
@@ -359,7 +359,9 @@ class TD3:
         # self.entropy_lr = self.entropy_lr / 10
         for param_group in self.policy_optimizer.param_groups:
             param_group['lr'] = self.policy_lr
-        for param_group in self.value_optimizer.param_groups:
+        for param_group in self.value_optimizer1.param_groups:
+            param_group['lr'] = self.value_lr
+        for param_group in self.value_optimizer2.param_groups:
             param_group['lr'] = self.value_lr
         # for param_group in self.soft_q_optimizer2.param_groups:
         #     param_group['lr'] = self.soft_q_lr

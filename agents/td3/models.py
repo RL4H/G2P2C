@@ -285,8 +285,8 @@ class ActorCritic(nn.Module):
         torch.save(self.policy_net_target, policy_net_target_path)
         # torch.save(self.soft_q_net1, soft_q_net1_path)
         # torch.save(self.soft_q_net2, soft_q_net2_path)
-        torch.save(self.value_net, value_net_path)
-        torch.save(self.value_net_target, value_net_target_path)
+        torch.save(self.value_net1, value_net_path)#TODO: update to include network 2
+        torch.save(self.value_net_target1, value_net_target_path)
 
 
 def NormedLinear(*args, scale=1.0):
