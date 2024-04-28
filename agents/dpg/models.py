@@ -117,7 +117,7 @@ class ActionModule(nn.Module):
             # action = torch.tanh(mu) + self.policy_noise.get_noise()
             # action = torch.clamp(action, min=-1, max=1)
 
-            action = torch.tanh((1+self.policy_noise.get_noise())*mu)
+            action = torch.tanh((1+self.policy_noise.get_noise()) * mu)
 
         else:
             action = torch.tanh(mu)
@@ -207,7 +207,7 @@ class ActorCritic(nn.Module):
         self.is_testing_worker = False
         # self.sac_v2 = args.sac_v2
         self.policy_net = PolicyNetwork(args, device)
-        self.policy_net_target = deepcopy(self.policy_net) #PolicyNetwork(args, device)
+        # self.policy_net_target = deepcopy(self.policy_net) #PolicyNetwork(args, device)
 
         # self.soft_q_net1 = QNetwork(args, device)
         # self.soft_q_net2 = QNetwork(args, device)
@@ -220,7 +220,7 @@ class ActorCritic(nn.Module):
         #     self.value_net_target = ValueNetwork(args, device)
 
         self.value_net = QNetwork(args, device)
-        self.value_net_target = deepcopy(self.value_net)#QNetwork(args, device)
+        # self.value_net_target = deepcopy(self.value_net)#QNetwork(args, device)
 
     def get_action(self, s, feat, mode='forward', worker_mode='training'):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
@@ -242,9 +242,9 @@ class ActorCritic(nn.Module):
         mu, sigma, action, log_prob = self.policy_net.forward(state, feat, mode='batch', worker_mode='no noise')
         return action, log_prob
 
-    def evaluate_target_policy_no_noise(self, state, feat):  # evaluate batch
-        mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='no noise')
-        return action, log_prob
+    # def evaluate_target_policy_no_noise(self, state, feat):  # evaluate batch
+    #     mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='no noise')
+    #     return action, log_prob
 
     def save(self, episode):
         # if self.sac_v2:
@@ -264,18 +264,18 @@ class ActorCritic(nn.Module):
         #     torch.save(self.soft_q_net2, soft_q_net2_path)
         #     torch.save(self.value_net, value_net_path)
         policy_net_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_policy_net.pth'
-        policy_net_target_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_policy_net_target.pth'
+        # policy_net_target_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_policy_net_target.pth'
         # soft_q_net1_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_soft_q_net1.pth'
         # soft_q_net2_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_soft_q_net2.pth'
         value_net_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_value_net.pth'
-        value_net_target_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_value_net_target.pth'
+        # value_net_target_path = self.experiment_dir + '/checkpoints/episode_' + str(episode) + '_value_net_target.pth'
 
         torch.save(self.policy_net, policy_net_path)
-        torch.save(self.policy_net_target, policy_net_target_path)
+        # torch.save(self.policy_net_target, policy_net_target_path)
         # torch.save(self.soft_q_net1, soft_q_net1_path)
         # torch.save(self.soft_q_net2, soft_q_net2_path)
         torch.save(self.value_net, value_net_path)
-        torch.save(self.value_net_target, value_net_target_path)
+        # torch.save(self.value_net_target, value_net_target_path)
 
 
 def NormedLinear(*args, scale=1.0):

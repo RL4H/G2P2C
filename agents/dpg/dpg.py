@@ -45,7 +45,7 @@ class ReplayMemory(object):
         return len(self.memory)
 
 
-class DDPG:
+class DPG:
     def __init__(self, args, device, load, path1, path2):
         self.args = args
         self.n_step = args.n_step
@@ -85,15 +85,15 @@ class DDPG:
         self.weight_decay = 0
 
         ### DDPG networks:
-        self.ddpg = ActorCritic(args, load, path1, path2, device).to(self.device)
+        self.dpg = ActorCritic(args, load, path1, path2, device).to(self.device)
         # self.soft_q_criterion1 = nn.MSELoss()
         # self.soft_q_criterion2 = nn.MSELoss()
         self.value_criterion = nn.MSELoss()
         # self.soft_q_optimizer1 = torch.optim.Adam(self.ddpg.soft_q_net1.parameters(), lr=self.soft_q_lr, weight_decay=self.weight_decay)
         # self.soft_q_optimizer2 = torch.optim.Adam(self.ddpg.soft_q_net2.parameters(), lr=self.soft_q_lr, weight_decay=self.weight_decay)
-        self.value_optimizer = torch.optim.Adam(self.ddpg.value_net.parameters(), lr=self.value_lr,
+        self.value_optimizer = torch.optim.Adam(self.dpg.value_net.parameters(), lr=self.value_lr,
                                                 weight_decay=self.weight_decay)
-        self.policy_optimizer = torch.optim.Adam(self.ddpg.policy_net.parameters(), lr=self.policy_lr,
+        self.policy_optimizer = torch.optim.Adam(self.dpg.policy_net.parameters(), lr=self.policy_lr,
                                                  weight_decay=self.weight_decay)
 
         # if self.sac_v2:
@@ -113,23 +113,23 @@ class DDPG:
         #     for p in self.ddpg.value_net_target.parameters():
         #         p.requires_grad = False
 
-        for target_param, param in zip(self.ddpg.value_net.parameters(), self.ddpg.value_net_target.parameters()):
-            target_param.data.copy_(param.data)
-        for target_param, param in zip(self.ddpg.policy_net.parameters(), self.ddpg.policy_net_target.parameters()):
-            target_param.data.copy_(param.data)
-        for p in self.ddpg.policy_net_target.parameters():
-            p.requires_grad = False
-        for p in self.ddpg.value_net_target.parameters():
-            p.requires_grad = False
+        # for target_param, param in zip(self.dpg.value_net.parameters(), self.dpg.value_net_target.parameters()):
+        #     target_param.data.copy_(param.data)
+        # for target_param, param in zip(self.dpg.policy_net.parameters(), self.dpg.policy_net_target.parameters()):
+        #     target_param.data.copy_(param.data)
+        # for p in self.dpg.policy_net_target.parameters():
+        #     p.requires_grad = False
+        # for p in self.dpg.value_net_target.parameters():
+        #     p.requires_grad = False
 
         self.replay_memory = ReplayMemory(self.replay_buffer_size)
 
         print('Policy Parameters: {}'.format(
-            sum(p.numel() for p in self.ddpg.policy_net.parameters() if p.requires_grad)))
+            sum(p.numel() for p in self.dpg.policy_net.parameters() if p.requires_grad)))
         # print('Q1 Parameters: {}'.format(sum(p.numel() for p in self.ddpg.soft_q_net1.parameters() if p.requires_grad)))
         # print('Q2 Parameters: {}'.format(sum(p.numel() for p in self.ddpg.soft_q_net2.parameters() if p.requires_grad)))
         print(
-            'Value Parameters: {}'.format(sum(p.numel() for p in self.ddpg.value_net.parameters() if p.requires_grad)))
+            'Value Parameters: {}'.format(sum(p.numel() for p in self.dpg.value_net.parameters() if p.requires_grad)))
 
         self.save_log([['policy_loss', 'value_loss', 'pi_grad', 'val_grad']], '/model_log')
         self.model_logs = torch.zeros(4, device=self.device)
@@ -173,11 +173,11 @@ class DDPG:
 
             # value network update
 
-            new_action, next_log_prob = self.ddpg.evaluate_target_policy_no_noise(next_state_batch, next_feat_batch)
-            next_values = self.ddpg.value_net_target(next_state_batch, next_feat_batch, new_action)
+            new_action, next_log_prob = self.dpg.evaluate_policy_no_noise(next_state_batch, next_feat_batch)
+            next_values = self.dpg.value_net(next_state_batch, next_feat_batch, new_action)
             target_value = (reward_batch + (self.gamma * (1 - done_batch) * next_values))
 
-            predicted_value = self.ddpg.value_net(cur_state_batch, cur_feat_batch, actions_batch)
+            predicted_value = self.dpg.value_net(cur_state_batch, cur_feat_batch, actions_batch)
 
             value_loss = self.value_criterion(target_value.detach(), predicted_value)
 
@@ -188,7 +188,7 @@ class DDPG:
             # self.ddpg.policy_net_target.ActionModule.policy_noise.reset()
             cl += value_loss.detach()
 
-            for param in self.ddpg.value_net.parameters():
+            for param in self.dpg.value_net.parameters():
                 if param.grad is not None:
                     val_grad += param.grad.sum()
 
@@ -233,16 +233,16 @@ class DDPG:
             # actor update : next q values
             # freeze value networks save compute: ref: openai:
 
-            for p in self.ddpg.value_net.parameters():
+            for p in self.dpg.value_net.parameters():
                 p.requires_grad = False
-            for p in self.ddpg.value_net_target.parameters():
-                p.requires_grad = False
+            # for p in self.dpg.value_net_target.parameters():
+            #     p.requires_grad = False
 
             # min_qf_pi = torch.min(self.ddpg.soft_q_net1(cur_state_batch, cur_feat_batch, actions_pi),
             #                       self.ddpg.soft_q_net2(cur_state_batch, cur_feat_batch, actions_pi))
 
-            policy_action, _ = self.ddpg.evaluate_policy_no_noise(cur_state_batch, cur_feat_batch)
-            policy_loss = self.ddpg.value_net(cur_state_batch, cur_feat_batch, policy_action)
+            policy_action, _ = self.dpg.evaluate_policy_no_noise(cur_state_batch, cur_feat_batch)
+            policy_loss = self.dpg.value_net(cur_state_batch, cur_feat_batch, policy_action)
             policy_loss = (-1 * policy_loss).mean()
 
             self.policy_optimizer.zero_grad()
@@ -250,13 +250,13 @@ class DDPG:
             self.policy_optimizer.step()
 
             pl += policy_loss.detach()
-            pi_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.policy_net.parameters(), 10)
+            pi_grad += torch.nn.utils.clip_grad_norm_(self.dpg.policy_net.parameters(), 10)
 
             # save compute: ref: openai:
-            for p in self.ddpg.value_net.parameters():
+            for p in self.dpg.value_net.parameters():
                 p.requires_grad = True
-            for p in self.ddpg.value_net_target.parameters():
-                p.requires_grad = True
+            # for p in self.dpg.value_net_target.parameters():
+            #     p.requires_grad = True
 
             # entropy coeff update
             # if self.sac_v2:
@@ -270,32 +270,32 @@ class DDPG:
 
             self.n_updates += 1
 
-            if self.n_updates % self.target_update_interval == 0:
-                with torch.no_grad():
-                    print("################updated target")
-                    for param, target_param in zip(self.ddpg.policy_net.parameters(),
-                                                   self.ddpg.policy_net_target.parameters()):
-                        target_param.data.mul_((1 - self.soft_tau))
-                        target_param.data.add_(self.soft_tau * param.data)
-                    for param, target_param in zip(self.ddpg.value_net.parameters(),
-                                                   self.ddpg.value_net_target.parameters()):
-                        target_param.data.mul_((1 - self.soft_tau))
-                        target_param.data.add_(self.soft_tau * param.data)
-
-                    # if self.sac_v2:
-                    #     for param, target_param in zip(self.ddpg.soft_q_net1.parameters(),
-                    #                                    self.ddpg.target_q_net1.parameters()):
-                    #         target_param.data.mul_((1 - self.soft_tau))
-                    #         target_param.data.add_(self.soft_tau * param.data)
-                    #     for param, target_param in zip(self.ddpg.soft_q_net2.parameters(),
-                    #                                    self.ddpg.target_q_net2.parameters()):
-                    #         target_param.data.mul_((1 - self.soft_tau))
-                    #         target_param.data.add_(self.soft_tau * param.data)
-                    # else:
-                    #     for param, target_param in zip(self.ddpg.value_net.parameters(),
-                    #                                    self.ddpg.value_net_target.parameters()):
-                    #         target_param.data.mul_((1 - self.soft_tau))
-                    #         target_param.data.add_(self.soft_tau * param.data)
+            # if self.n_updates % self.target_update_interval == 0:
+            #     with torch.no_grad():
+            #         print("################updated target")
+            #         for param, target_param in zip(self.dpg.policy_net.parameters(),
+            #                                        self.dpg.policy_net_target.parameters()):
+            #             target_param.data.mul_((1 - self.soft_tau))
+            #             target_param.data.add_(self.soft_tau * param.data)
+            #         for param, target_param in zip(self.dpg.value_net.parameters(),
+            #                                        self.dpg.value_net_target.parameters()):
+            #             target_param.data.mul_((1 - self.soft_tau))
+            #             target_param.data.add_(self.soft_tau * param.data)
+            #
+            #         # if self.sac_v2:
+            #         #     for param, target_param in zip(self.ddpg.soft_q_net1.parameters(),
+            #         #                                    self.ddpg.target_q_net1.parameters()):
+            #         #         target_param.data.mul_((1 - self.soft_tau))
+            #         #         target_param.data.add_(self.soft_tau * param.data)
+            #         #     for param, target_param in zip(self.ddpg.soft_q_net2.parameters(),
+            #         #                                    self.ddpg.target_q_net2.parameters()):
+            #         #         target_param.data.mul_((1 - self.soft_tau))
+            #         #         target_param.data.add_(self.soft_tau * param.data)
+            #         # else:
+            #         #     for param, target_param in zip(self.ddpg.value_net.parameters(),
+            #         #                                    self.ddpg.value_net_target.parameters()):
+            #         #         target_param.data.mul_((1 - self.soft_tau))
+            #         #         target_param.data.add_(self.soft_tau * param.data)
 
             # pl += policy_loss.detach()
             # ql1 += q_value_loss1.detach()
@@ -321,8 +321,8 @@ class DDPG:
         #     param_group['lr'] = self.soft_q_lr
 
     def decay_noise_std(self):
-        self.ddpg.policy_net.ActionModule.noise_std = self.ddpg.policy_net.ActionModule.noise_std / 10
-        self.ddpg.policy_net_target.ActionModule.noise_std = self.ddpg.policy_net_target.ActionModule.noise_std / 10
+        self.dpg.policy_net.ActionModule.noise_std = self.dpg.policy_net.ActionModule.noise_std / 10
+        # self.dpg.policy_net_target.ActionModule.noise_std = self.dpg.policy_net_target.ActionModule.noise_std / 10
 
 
     def run(self, args, patients, env_ids, seed):
@@ -349,23 +349,23 @@ class DDPG:
             print("rollout: ", rollout)
             t1 = time.time()
             for i in range(self.n_training_workers):
-                data = worker_agents[i].rollout(self.ddpg, self.replay_memory)
+                data = worker_agents[i].rollout(self.dpg, self.replay_memory)
                 self.update()
             t2 = time.time()
-            self.ddpg.save(rollout)
-            self.ddpg.policy_net.ActionModule.policy_noise.reset()
+            self.dpg.save(rollout)
+            self.dpg.policy_net.ActionModule.policy_noise.reset()
 
             # testing
             t5 = time.time()
             ri = 0
             if self.completed_interactions > 200000:
-                self.ddpg.is_testing_worker = True
+                self.dpg.is_testing_worker = True
             for i in range(self.n_testing_workers):
-                res = testing_agents[i].rollout(self.ddpg, self.replay_memory)
+                res = testing_agents[i].rollout(self.dpg, self.replay_memory)
                 ri += res[0]
             ri_arr[rollout % stop_criteria_len] = ri / self.n_testing_workers  # mean ri of that rollout.
             t6 = time.time()
-            self.ddpg.is_testing_worker = False
+            self.dpg.is_testing_worker = False
             gc.collect()
 
             # decay lr
@@ -391,6 +391,6 @@ class DDPG:
                 validation_agents = [Worker(testing_args, 'testing', patients, env_ids, i + 6000, i + 6000, self.device)
                                      for i in range(n_val_trials)]
                 for i in range(n_val_trials):
-                    res = validation_agents[i].rollout(self.ddpg, self.replay_memory)
+                    res = validation_agents[i].rollout(self.dpg, self.replay_memory)
                 print('Algo RAN Successfully')
                 exit()

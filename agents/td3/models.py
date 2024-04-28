@@ -119,6 +119,14 @@ class ActionModule(nn.Module):
 
             action = torch.tanh((1+self.policy_noise.get_noise())*mu)
 
+        if worker_mode == 'target':
+            # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
+
+            # action = torch.tanh(mu) + self.policy_noise.get_noise()
+            # action = torch.clamp(action, min=-1, max=1)
+
+            action = torch.tanh((torch.clamp(1+self.policy_noise.get_noise(), min=-1.05, max=1.05))*mu)
+
         else:
             action = torch.tanh(mu)
 
@@ -219,8 +227,11 @@ class ActorCritic(nn.Module):
         #     self.value_net = ValueNetwork(args, device)
         #     self.value_net_target = ValueNetwork(args, device)
 
-        self.value_net = QNetwork(args, device)
-        self.value_net_target = deepcopy(self.value_net)#QNetwork(args, device)
+        self.value_net1 = QNetwork(args, device)
+        self.value_net2 = QNetwork(args, device)
+
+        self.value_net_target1 = deepcopy(self.value_net1)#QNetwork(args, device)
+        self.value_net_target2 = deepcopy(self.value_net2)  # QNetwork(args, device)
 
     def get_action(self, s, feat, mode='forward', worker_mode='training'):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
@@ -242,8 +253,8 @@ class ActorCritic(nn.Module):
         mu, sigma, action, log_prob = self.policy_net.forward(state, feat, mode='batch', worker_mode='no noise')
         return action, log_prob
 
-    def evaluate_target_policy_no_noise(self, state, feat):  # evaluate batch
-        mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='no noise')
+    def evaluate_target_policy_noise(self, state, feat):  # evaluate batch
+        mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='target')
         return action, log_prob
 
     def save(self, episode):
