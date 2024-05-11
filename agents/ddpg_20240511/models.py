@@ -113,28 +113,11 @@ class ActionModule(nn.Module):
 
         if worker_mode == 'training':
             # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
-            action = torch.tanh(mu) + self.policy_noise.get_noise()
-            action = torch.clamp(action, min=-1, max=1)
-
-        if worker_mode == 'target':
-            # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
 
             # action = torch.tanh(mu) + self.policy_noise.get_noise()
             # action = torch.clamp(action, min=-1, max=1)
 
-            # action = torch.tanh((torch.clamp(1+self.policy_noise.get_noise(), min=-1.05, max=1.05))*mu)
-            # action = torch.tanh((torch.clamp(torch.from_numpy(np.array([1 + self.policy_noise.get_noise()])).float().to(mu.device), min=-1.05, max=1.05)) * mu)
-            action_no_noise = torch.tanh(mu)
-            action_with_noise = torch.tanh(mu) + self.policy_noise.get_noise()
-            if (action_with_noise-action_no_noise)/action_no_noise > 1.01:
-                action = action_no_noise * 1.01
-            elif (action_with_noise-action_no_noise)/action_no_noise < 0.99:
-                action = action_no_noise * 0.99
-            else:
-                action = action_with_noise
-
-            action = torch.clamp(action_with_noise, min=-1, max=1)
-
+            action = torch.tanh((1+self.policy_noise.get_noise())*mu)
 
         else:
             action = torch.tanh(mu)
@@ -236,11 +219,8 @@ class ActorCritic(nn.Module):
         #     self.value_net = ValueNetwork(args, device)
         #     self.value_net_target = ValueNetwork(args, device)
 
-        self.value_net1 = QNetwork(args, device)
-        self.value_net2 = QNetwork(args, device)
-
-        self.value_net_target1 = deepcopy(self.value_net1)#QNetwork(args, device)
-        self.value_net_target2 = deepcopy(self.value_net2)  # QNetwork(args, device)
+        self.value_net = QNetwork(args, device)
+        self.value_net_target = deepcopy(self.value_net)#QNetwork(args, device)
 
     def get_action(self, s, feat, mode='forward', worker_mode='training'):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
@@ -262,8 +242,8 @@ class ActorCritic(nn.Module):
         mu, sigma, action, log_prob = self.policy_net.forward(state, feat, mode='batch', worker_mode='no noise')
         return action, log_prob
 
-    def evaluate_target_policy_noise(self, state, feat):  # evaluate batch
-        mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='target')
+    def evaluate_target_policy_no_noise(self, state, feat):  # evaluate batch
+        mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='no noise')
         return action, log_prob
 
     def save(self, episode):
@@ -294,8 +274,8 @@ class ActorCritic(nn.Module):
         torch.save(self.policy_net_target, policy_net_target_path)
         # torch.save(self.soft_q_net1, soft_q_net1_path)
         # torch.save(self.soft_q_net2, soft_q_net2_path)
-        torch.save(self.value_net1, value_net_path)#TODO: update to include network 2
-        torch.save(self.value_net_target1, value_net_target_path)
+        torch.save(self.value_net, value_net_path)
+        torch.save(self.value_net_target, value_net_target_path)
 
 
 def NormedLinear(*args, scale=1.0):

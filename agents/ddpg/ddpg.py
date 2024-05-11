@@ -16,7 +16,8 @@ from collections import namedtuple, deque
 #python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.001 --noise_model normal_dist --seed 1 --debug 1
 
 #python run_RL_agent.py --agent ddpg --folder_id LR/1e-5/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-5 --vf_lr 1e-5 --seed 1 --debug 0
-#python run_RL_agent.py --agent ddpg --folder_id troubleshoot_20kBuffer_OUNoise/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-4 --noise_model ou_noise --noise_std 1e-3  --seed 1 --debug 0
+#python run_RL_agent.py --agent ddpg --folder_id preNCI_testrun/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-4 --noise_model ou_noise --noise_std 1e-1  --seed 1 --debug 0
+
 
 
 Transition = namedtuple('Transition',
@@ -353,7 +354,18 @@ class DDPG:
                 self.update()
             t2 = time.time()
             self.ddpg.save(rollout)
-            self.ddpg.policy_net.ActionModule.policy_noise.reset()
+            # self.ddpg.policy_net.ActionModule.policy_noise.reset()
+            if rollout == 40:
+                self.ddpg.policy_net.ActionModule.policy_noise.sigma = 2e-1
+                self.ddpg.policy_net.ActionModule.policy_noise.reset()
+
+            if rollout == 150:
+                self.ddpg.policy_net.ActionModule.policy_noise.sigma = 1e-1
+                self.ddpg.policy_net.ActionModule.policy_noise.reset()
+
+            if rollout == 185:
+                self.ddpg.policy_net.ActionModule.policy_noise.sigma = 5e-2
+                self.ddpg.policy_net.ActionModule.policy_noise.reset()
 
             # testing
             t5 = time.time()

@@ -13,7 +13,11 @@ from agents.td3.worker import Worker
 from agents.td3.models import ActorCritic
 from collections import namedtuple, deque
 
-#python run_RL_agent.py --agent td3 --folder_id td3_test/OUNoise/1e-0/TD30_2 --patient_id 0 --return_type average --action_type exponential --device cuda  --pi_lr 5e-4 --vf_lr 5e-4 --noise_model ou_noise --noise_std 1e-0  --seed 2 --debug 0
+#python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.001 --noise_model normal_dist --seed 1 --debug 1
+
+#python run_RL_agent.py --agent ddpg --folder_id LR/1e-5/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-5 --vf_lr 1e-5 --seed 1 --debug 0
+#python run_RL_agent.py --agent ddpg --folder_id troubleshoot_20kBuffer_OUNoise/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-4 --noise_model ou_noise --noise_std 1e-3  --seed 1 --debug 0
+
 
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
@@ -439,8 +443,8 @@ class TD3:
             self.td3.save(rollout)
             self.td3.policy_net.ActionModule.policy_noise.reset()
 
-            # if rollout % 20 == 0:
-            #     self.td3.policy_net.ActionModule.policy_noise.sigma = self.td3.policy_net.ActionModule.policy_noise.sigma/3
+            if rollout % 20 == 0:
+                self.td3.policy_net.ActionModule.policy_noise.sigma = self.td3.policy_net.ActionModule.policy_noise.sigma/3
 
             # testing
             t5 = time.time()

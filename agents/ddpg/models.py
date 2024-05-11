@@ -113,12 +113,8 @@ class ActionModule(nn.Module):
 
         if worker_mode == 'training':
             # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
-
-            # action = torch.tanh(mu) + self.policy_noise.get_noise()
-            # action = torch.clamp(action, min=-1, max=1)
-
-            action = torch.tanh((1+self.policy_noise.get_noise())*mu)
-
+            action = torch.tanh(mu) + self.policy_noise.get_noise()
+            action = torch.clamp(action, min=-1, max=1)
         else:
             action = torch.tanh(mu)
 
@@ -303,11 +299,10 @@ class ExploratoryNoise:
         self.x0 = x0
         self.noise_model = noise_model
         self.reset()
-        self.noise = torch.distributions.Normal(0, self.sigma).rsample()
 
     def get_noise(self):
         if self.noise_model == 'normal_dist':
-            return self.noise
+            return torch.distributions.Normal(0, self.sigma).rsample()
 
         elif self.noise_model == 'ou_noise':
             x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt \
@@ -320,4 +315,3 @@ class ExploratoryNoise:
 
     def reset(self):
         self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
-        self.noise = torch.distributions.Normal(0, self.sigma).rsample()
