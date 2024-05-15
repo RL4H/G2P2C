@@ -113,12 +113,8 @@ class ActionModule(nn.Module):
 
         if worker_mode == 'training':
             # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
-
-            # action = torch.tanh(mu) + self.policy_noise.get_noise()
-            # action = torch.clamp(action, min=-1, max=1)
-
-            action = torch.tanh((1+self.policy_noise.get_noise()) * mu)
-
+            action = torch.tanh(mu) + self.policy_noise.get_noise()
+            action = torch.clamp(action, min=-1, max=1)
         else:
             action = torch.tanh(mu)
 

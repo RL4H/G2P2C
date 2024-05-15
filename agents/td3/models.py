@@ -126,14 +126,9 @@ class ActionModule(nn.Module):
             # action = torch.tanh((torch.clamp(torch.from_numpy(np.array([1 + self.policy_noise.get_noise()])).float().to(mu.device), min=-1.05, max=1.05)) * mu)
             action_no_noise = torch.tanh(mu)
             action_with_noise = torch.tanh(mu) + self.policy_noise.get_noise()
-            if (action_with_noise-action_no_noise)/action_no_noise > 1.01:
-                action = action_no_noise * 1.01
-            elif (action_with_noise-action_no_noise)/action_no_noise < 0.99:
-                action = action_no_noise * 0.99
-            else:
-                action = action_with_noise
+            action = torch.clamp(action_with_noise,min=action_no_noise*0.99, max=action_no_noise*1.01)
 
-            action = torch.clamp(action_with_noise, min=-1, max=1)
+            action = torch.clamp(action, min=-1, max=1)
 
 
         else:
