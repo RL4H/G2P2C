@@ -1,3 +1,7 @@
+import sys
+from decouple import config
+MAIN_PATH = config('MAIN_PATH')
+sys.path.insert(1, MAIN_PATH)
 from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
@@ -6,6 +10,40 @@ from datetime import timedelta, datetime
 import matplotlib.dates as mdates
 import matplotlib.lines as mlines
 import math
+
+
+def experiment_error_check(cohort, algorithm, algoAbbreviation,
+                           subjects=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+                           seeds=['1', '2', '3'], n_trials=500):
+    print("Checking Experiment Errors for {} cohort, {} Algorithm".format(cohort, algorithm))
+    init_bg = 0
+    for sub in subjects:
+        print("Checking subject: {}".format(sub))
+        incomplete = False
+        for s in seeds:
+            FOLDER_PATH='/results/'+cohort+'/'+algorithm+'/'+algoAbbreviation+sub+'_'+s+'/testing/data'
+            for i in range(0, n_trials):
+                test_i = 'logs_worker_'+str(6000+i)+'.csv'
+                df = pd.read_csv(MAIN_PATH +FOLDER_PATH+ '/'+test_i) #print(df)
+                test_i = 'testing_episode_summary_'+str(6000+i)+'.csv'
+                df2 = pd.read_csv(MAIN_PATH +FOLDER_PATH+ '/'+test_i) #print(df2)
+                try:
+                    init_bg = init_bg + df['cgm'][0]
+                except:
+                    print('incomplete subject log_workers:')
+                    print(sub)
+                    incomplete = True
+                try:
+                    init_bg = init_bg + df2['epi'][0]
+                except:
+                    print('Incomplete subject testing_episode_summary_:')
+                    print(sub)
+                    incomplete = True
+                if incomplete:
+                    break
+            if incomplete:
+                break
+    print('Error checking is complete. No errors detected!')
 
 def display_commands_v2(arr):
     n_disp_experiments = 40
@@ -426,7 +464,7 @@ def plot_episode(experiment, tester, episode):
     else:
         ax2.plot(df['time'], df['ins'], (1 / 288), color=ins_color)  # width of bar is given in days
 
-    ax.axhline(y=50, color='r', linestyle='--')
+    ax.axhline(y=54, color='r', linestyle='--')
     ax.axhspan(70, 180, alpha=0.2, color='limegreen', lw=0)
 
     x = True
@@ -465,7 +503,7 @@ def plot_episode(experiment, tester, episode):
     ax.set_ylabel('CGM [mg/dL]', color=cgm_color)
     ax2.set_ylabel('Insulin [U/min]', color=ins_color)
     ax2.set_xlabel('Time (hrs)')
-    ax.set_title('Simulation: Glucose Regulation')
+    #ax.set_title('Simulation: Glucose Regulation')
     ax.grid()
 
     cgm_line = mlines.Line2D([], [], color=cgm_color, label='CGM (Sensor: GuardianRT)')
@@ -473,13 +511,102 @@ def plot_episode(experiment, tester, episode):
     meal_ann_line = mlines.Line2D([], [], color='k', marker='D', linestyle='None', label='Meal Announcement (20min)')
     ax.legend(handles=[cgm_line, ins_line], loc='upper right')  # meal_ann_line
 
-    ax.axhline(y=300, color='r', linestyle='--')
+    ax.axhline(y=250, color='r', linestyle='--')
 
-    ax.text(df.iloc[1]['time'], 310, 'Severe Hyperglycemia', size=12, color='r')
-    ax.text(df.iloc[1]['time'], 280, 'Hyperglycemia', size=12)
-    ax.text(df.iloc[1]['time'], 100, 'Normoglcemia', size=12, color=cgm_color)
-    ax.text(df.iloc[1]['time'], 54, 'Hypoglycemia', size=12)
-    ax.text(df.iloc[1]['time'], 30, 'Severe Hypoglycemia', size=12, color='r')
+    # ax.text(df.iloc[1]['time'], 260, 'Severe Hyperglycemia', size=12, color='r')
+    # ax.text(df.iloc[1]['time'], 230, 'Hyperglycemia', size=12)
+    # ax.text(df.iloc[1]['time'], 100, 'Normoglcemia', size=12, color=cgm_color)
+    # ax.text(df.iloc[1]['time'], 54, 'Hypoglycemia', size=12)
+    # ax.text(df.iloc[1]['time'], 30, 'Severe Hypoglycemia', size=12, color='r')
+
+    #fig.savefig(experiment.experiment_dir +'/'+ str(tester))
+
+    plt.show()
+
+
+def plot_episode_new(experiment, tester, episode):
+    df = experiment.get_test_episode(tester, episode)
+    fig = plt.figure(figsize=(16, 6))
+    ax = fig.add_subplot(111)
+    #ax2 = ax.twinx()
+
+    #ax2 = fig.add_subplot(111)
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    #ax2.set_yscale('log')
+    #ax2.set_ylim((1e-3, 5))
+    #divider = make_axes_locatable(ax2)
+    #ax = divider.append_axes("top", size=3.0, pad=0.02, sharex=ax2)
+    #ax.set_ylim((5, 600))
+
+    cgm_color = '#000080'
+    ins_color = 'mediumseagreen'
+    meal_color = '#800000'
+
+    max_ins = max(df['ins'])
+    max_cgm = min(max(df['cgm']) + 100, 620) # ,
+
+    ax.plot(df['time'], df['cgm'], markerfacecolor=cgm_color, linewidth=2.0)
+
+    # if experiment.plot_version == 1:
+    #     ax2.bar(df['time'], df['ins'], (1/288), color=ins_color)  # width of bar is given in days
+    # else:
+    #     ax2.plot(df['time'], df['ins'], (1 / 288), color=ins_color)  # width of bar is given in days
+
+    ax.axhline(y=54, color='r', linestyle='--')
+    ax.axhspan(70, 180, alpha=0.2, color='limegreen', lw=0)
+
+    x = True
+    for t in range(0, len(df)):
+        if df.iloc[t]['meal']:
+            off_set = (max_cgm - 125) if x else (max_cgm - 75)
+            ax.annotate('Carbohydrates: ' + str(df.iloc[t]['meal'])+'g', (df.iloc[t]['time'], off_set), color=meal_color, size=12)  #df.iloc[t]['cgm']
+            ax.plot((df.iloc[t]['time'], df.iloc[t]['time']), (df.iloc[t]['cgm'], off_set), color=meal_color)
+
+            m_a_min, sample_rate = 20, 5
+            m_a_offset = int(m_a_min / sample_rate)
+            # if experiment.plot_version == 1:
+            #     ax.plot(df.iloc[t]['time'] - timedelta(hours=0, minutes=m_a_min), df.iloc[t-m_a_offset]['cgm'],
+            #             marker='D', color='k')
+            # else:
+            #     ax.plot(df.iloc[t-m_a_offset]['time'], df.iloc[t-m_a_offset]['cgm'], marker='D', color='k')
+
+            x = not(x)
+
+    if experiment.plot_version == 1:
+        start_time = df['time'].iloc[0]  # end_time = df['time'].iloc[-1]
+        ax.set_xlim([start_time, start_time + timedelta(hours=24)]) # start_time + timedelta(hours=3)]
+        ax.xaxis.set_minor_locator(mdates.AutoDateLocator())
+        ax.xaxis.set_minor_formatter(mdates.DateFormatter('%H:%M\n'))
+        ax.xaxis.set_major_locator(mdates.DayLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('\n%b %d'))
+
+    ax.set_ylim(0, max_cgm)
+    var_ins_max = max_ins * (max_cgm / 50)
+    #var_ins_max = 1
+    #ax2.set_ylim(0, var_ins_max)
+    #ax2.set_yscale('log')
+    #ax2.set_ylim(1e-4, 10000)
+    #ax2.set_yticks(np.arange(0, var_ins_max + 1, 0.5))
+
+    ax.set_ylabel('CGM [mg/dL]', color=cgm_color)
+    #ax2.set_ylabel('Insulin [U/min]', color=ins_color)
+    ax.set_xlabel('Time (hrs)')
+    #ax.set_title('Simulation: Glucose Regulation')
+    ax.grid()
+
+    cgm_line = mlines.Line2D([], [], color=cgm_color, label='CGM (Sensor: GuardianRT)')
+    ins_line = mlines.Line2D([], [], color=ins_color, label='Insulin (Pump: Insulet)')
+    meal_ann_line = mlines.Line2D([], [], color='k', marker='D', linestyle='None', label='Meal Announcement (20min)')
+    ax.legend(handles=[cgm_line], loc='upper right')  # meal_ann_line
+
+    ax.axhline(y=250, color='r', linestyle='--')
+
+    ax.text(df.iloc[1]['time'], 260, 'Severe Hyperglycemia (TAR Level 2)', size=12, color='r')
+    ax.text(df.iloc[1]['time'], 230, 'Hyperglycemia (TAR Level 1)', size=12)
+    ax.text(df.iloc[1]['time'], 100, 'Normoglycemia (TIR)', size=12, color=cgm_color)
+    ax.text(df.iloc[1]['time'], 58, 'Hypoglycemia (TBR Level 1)', size=12)
+    ax.text(df.iloc[1]['time'], 30, 'Severe Hypoglycemia (TBR Level 2)', size=12, color='r')
+    ax.set_yticks([0, 54, 70, 180, 250, 400])
 
     #fig.savefig(experiment.experiment_dir +'/'+ str(tester))
 
@@ -658,18 +785,18 @@ def plot_testing_average_metric(dict, groups, type, dis_len, metric, goal, fill,
 
         ax.plot(data['steps'], data['mean'], color=dict[i]['color'], label=dict[i]['label'])
         if fill:
-            ax.fill_between(data['steps'], data['min'], data['max'], color=dict[i]['color'], alpha=0.2)
+            ax.fill_between(data['steps'], data['min'], data['max'], color=dict[i]['color'], alpha=0.1)
 
-    ax.axhline(y=goal, color='k', linestyle='--')
+    #ax.axhline(y=goal, color='k', linestyle='--')
 
     graph_title =  title if title is not None else 'Average Rewards (Multiple Seeds)'
     ax.set_title(graph_title, fontsize=32)
     # ax.legend(loc="upper left", fontsize=16)
-    ax.set_ylabel('Reward', fontsize=24) #ax.set_ylabel(metric)
-    ax.set_xlabel('Interactions', fontsize=24)
+    ax.set_ylabel('Total Reward', fontsize=24) #ax.set_ylabel(metric)
+    ax.set_xlabel('Steps', fontsize=24)
     ax.grid()
     ax.set_xlim(0, dis_len)
-    #ax.set_ylim(0, 1000000)
+    ax.set_ylim(0, 320)
     plt.show()
 
 
