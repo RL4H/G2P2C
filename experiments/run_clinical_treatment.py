@@ -55,7 +55,7 @@ def run_simulation(args, id=0, rollout_steps=288*30, n_trials=10, seed=0):
                 bolus_carbs = carb_estimate(bolus_carbs, info['day_hour'], patients[id], type=args.carb_estimation_method)
                 #print('The real carbs : {}, estimated carbs: {}'.format(real_bolus, bolus_carbs))
 
-            trial_history[counter] = [next_state.CGM, carbs, action, counter]
+            trial_history[counter] = [next_state.CGM, carbs, action[0], counter]
 
             counter += 1
             action = controller.get_action(meal=bolus_carbs, glucose=next_state.CGM)  # BB Controller.
