@@ -93,9 +93,7 @@ class ActionModule(nn.Module):
         self.fc_layer1 = nn.Linear(self.feature_extractor, self.last_hidden)
         self.fc_layer2 = nn.Linear(self.last_hidden, self.last_hidden)
         self.fc_layer3 = nn.Linear(self.last_hidden, self.last_hidden)
-        # self.mu = nn.Linear(self.last_hidden, self.output)
-        self.mu = NormedLinear(self.last_hidden, self.output, scale=0.1)
-
+        self.mu = nn.Linear(self.last_hidden, self.output)
         self.sigma = nn.Linear(self.last_hidden, self.output)
         self.normalDistribution = torch.distributions.Normal
         self.noise_model = args.noise_model
@@ -114,36 +112,11 @@ class ActionModule(nn.Module):
         dst = self.normalDistribution(mu, action_std)
 
         if worker_mode == 'training':
-            noise_value = self.policy_noise.get_noise()
+            # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
+            action = torch.tanh(mu) + self.policy_noise.get_noise()
+            action = torch.clamp(action, min=-1, max=1)
 
-            # Noise Model 0 - Same as paper
-            action = torch.tanh(mu + (torch.randn_like(mu) * 0.1))# Value from Fujimoto et al (2018) paper
-
-            # Noise Model 1 - Additive to mu
-            # action = torch.tanh(mu + noise_value)
-
-            # Noise Model 2 - Multiplicative to mu
-            # action = torch.tanh((1+noise_value)*mu)
-
-            # Noise Model 3 - Additive to tanh(mu) with clamp [-1,1]
-            # action = torch.tanh(mu) + noise_value
-            # action = torch.clamp(action, min=-1, max=1)
-
-            # Noise Model 4 - Multiplicative to tanh(mu) with clamp [-1,1]
-            # action = torch.tanh(mu) * (1 + noise_value)
-            # action = torch.clamp(action, min=-1, max=1)
-
-            # Noise Model 5 - Additive to scaled tanh(mu) then passed through tanh
-            # mu_scale = 1.5
-            # action = mu_scale * torch.tanh(mu) + noise_value
-            # action = torch.tanh(action)
-
-            # Noise Model 6 - Multiplicative to scaled tanh(mu) then passed through tanh
-            # mu_scale = 2
-            # action = mu_scale * torch.tanh(mu)* (1 + noise_value)
-            # action = torch.tanh(action)
-
-        elif worker_mode == 'target':
+        if worker_mode == 'target':
             # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
 
             # action = torch.tanh(mu) + self.policy_noise.get_noise()
@@ -151,15 +124,11 @@ class ActionModule(nn.Module):
 
             # action = torch.tanh((torch.clamp(1+self.policy_noise.get_noise(), min=-1.05, max=1.05))*mu)
             # action = torch.tanh((torch.clamp(torch.from_numpy(np.array([1 + self.policy_noise.get_noise()])).float().to(mu.device), min=-1.05, max=1.05)) * mu)
-            # action_no_noise = torch.tanh(mu)
-            # action_with_noise = torch.tanh(mu) + self.policy_noise.get_noise()
-            # action = torch.clamp(action_with_noise,min=action_no_noise*0.99, max=action_no_noise*1.01)
+            action_no_noise = torch.tanh(mu)
+            action_with_noise = torch.tanh(mu) + self.policy_noise.get_noise()
+            action = torch.clamp(action_with_noise,min=action_no_noise*0.99, max=action_no_noise*1.01)
 
-            policy_noise = 0.2 # Value from Fujimoto et al (2018) paper
-            noise_clip = 0.5 # Value from Fujimoto et al (2018) paper
-
-            noise = (torch.randn_like(mu) * policy_noise).clamp(-noise_clip, noise_clip)
-            action = torch.tanh(mu + noise)
+            action = torch.clamp(action, min=-1, max=1)
 
 
         else:
@@ -252,6 +221,15 @@ class ActorCritic(nn.Module):
         self.policy_net = PolicyNetwork(args, device)
         self.policy_net_target = deepcopy(self.policy_net) #PolicyNetwork(args, device)
 
+        # self.soft_q_net1 = QNetwork(args, device)
+        # self.soft_q_net2 = QNetwork(args, device)
+
+        # if self.sac_v2:
+        #     self.target_q_net1 = QNetwork(args, device)
+        #     self.target_q_net2 = QNetwork(args, device)
+        # else:
+        #     self.value_net = ValueNetwork(args, device)
+        #     self.value_net_target = ValueNetwork(args, device)
 
         self.value_net1 = QNetwork(args, device)
         self.value_net2 = QNetwork(args, device)
@@ -262,13 +240,13 @@ class ActorCritic(nn.Module):
     def get_action(self, s, feat, mode='forward', worker_mode='training'):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
-        mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode=mode, worker_mode=worker_mode)
+        mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode='forward', worker_mode='training')
         return action.detach().cpu().numpy(), mu.detach().cpu().numpy(), sigma.detach().cpu().numpy()
 
     def get_action_no_noise(self, s, feat, mode='forward', worker_mode='training'):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
-        mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode=mode, worker_mode='no noise')
+        mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode='forward', worker_mode='no noise')
         return action.detach().cpu().numpy(), mu.detach().cpu().numpy(), sigma.detach().cpu().numpy()
 
     def evaluate_policy(self, state, feat):  # evaluate batch
@@ -358,9 +336,3 @@ class ExploratoryNoise:
     def reset(self):
         self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
         self.noise = torch.distributions.Normal(0, self.sigma).rsample()
-
-
-def NormedLinear(*args, scale=1.0):
-    out = nn.Linear(*args)
-    out.weight.data *= scale / out.weight.norm(dim=1, p=2, keepdim=True)
-    return out

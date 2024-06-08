@@ -93,15 +93,12 @@ class ActionModule(nn.Module):
         self.fc_layer1 = nn.Linear(self.feature_extractor, self.last_hidden)
         self.fc_layer2 = nn.Linear(self.last_hidden, self.last_hidden)
         self.fc_layer3 = nn.Linear(self.last_hidden, self.last_hidden)
-        # self.mu = nn.Linear(self.last_hidden, self.output)
-        self.mu = NormedLinear(self.last_hidden, self.output, scale=0.1)
-
+        self.mu = nn.Linear(self.last_hidden, self.output)
         self.sigma = nn.Linear(self.last_hidden, self.output)
         self.normalDistribution = torch.distributions.Normal
         self.noise_model = args.noise_model
         self.noise_std = args.noise_std
         self.policy_noise = ExploratoryNoise(0, self.noise_std, noise_model=self.noise_model)
-
 
     def forward(self, extract_states, worker_mode='training'):
         fc_output1 = F.relu(self.fc_layer1(extract_states))
@@ -114,54 +111,12 @@ class ActionModule(nn.Module):
         dst = self.normalDistribution(mu, action_std)
 
         if worker_mode == 'training':
-            noise_value = self.policy_noise.get_noise()
-
-            # Noise Model 0 - Same as paper
-            action = torch.tanh(mu + (torch.randn_like(mu) * 0.1))# Value from Fujimoto et al (2018) paper
-
-            # Noise Model 1 - Additive to mu
-            # action = torch.tanh(mu + noise_value)
-
-            # Noise Model 2 - Multiplicative to mu
-            # action = torch.tanh((1+noise_value)*mu)
-
-            # Noise Model 3 - Additive to tanh(mu) with clamp [-1,1]
-            # action = torch.tanh(mu) + noise_value
-            # action = torch.clamp(action, min=-1, max=1)
-
-            # Noise Model 4 - Multiplicative to tanh(mu) with clamp [-1,1]
-            # action = torch.tanh(mu) * (1 + noise_value)
-            # action = torch.clamp(action, min=-1, max=1)
-
-            # Noise Model 5 - Additive to scaled tanh(mu) then passed through tanh
-            # mu_scale = 1.5
-            # action = mu_scale * torch.tanh(mu) + noise_value
-            # action = torch.tanh(action)
-
-            # Noise Model 6 - Multiplicative to scaled tanh(mu) then passed through tanh
-            # mu_scale = 2
-            # action = mu_scale * torch.tanh(mu)* (1 + noise_value)
-            # action = torch.tanh(action)
-
-        elif worker_mode == 'target':
             # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
+            action = torch.tanh(mu + self.policy_noise.get_noise())
+            # action = torch.tanh(mu * (1 + self.policy_noise.get_noise()))
 
             # action = torch.tanh(mu) + self.policy_noise.get_noise()
             # action = torch.clamp(action, min=-1, max=1)
-
-            # action = torch.tanh((torch.clamp(1+self.policy_noise.get_noise(), min=-1.05, max=1.05))*mu)
-            # action = torch.tanh((torch.clamp(torch.from_numpy(np.array([1 + self.policy_noise.get_noise()])).float().to(mu.device), min=-1.05, max=1.05)) * mu)
-            # action_no_noise = torch.tanh(mu)
-            # action_with_noise = torch.tanh(mu) + self.policy_noise.get_noise()
-            # action = torch.clamp(action_with_noise,min=action_no_noise*0.99, max=action_no_noise*1.01)
-
-            policy_noise = 0.2 # Value from Fujimoto et al (2018) paper
-            noise_clip = 0.5 # Value from Fujimoto et al (2018) paper
-
-            noise = (torch.randn_like(mu) * policy_noise).clamp(-noise_clip, noise_clip)
-            action = torch.tanh(mu + noise)
-
-
         else:
             action = torch.tanh(mu)
 
@@ -169,7 +124,7 @@ class ActionModule(nn.Module):
 
         # calc log_prob
         # openai implementation
-        logp_pi = 0#dst.log_prob(gaussian_action[0])  # .sum(axis=-1)
+        logp_pi = 0  # dst.log_prob(gaussian_action[0])  # .sum(axis=-1)
         # logp_pi -= (2 * (np.log(2) - gaussian_action[0] - F.softplus(-2 * gaussian_action[0])))  # .sum(axis=1)
         # SAC paper implementation
         # log_prob = dst.log_prob(gaussian_action[0]) - torch.log(1 - action[0] ** 2 + 1e-6)
@@ -250,25 +205,31 @@ class ActorCritic(nn.Module):
         self.is_testing_worker = False
         # self.sac_v2 = args.sac_v2
         self.policy_net = PolicyNetwork(args, device)
-        self.policy_net_target = deepcopy(self.policy_net) #PolicyNetwork(args, device)
+        self.policy_net_target = deepcopy(self.policy_net)  # PolicyNetwork(args, device)
 
+        # self.soft_q_net1 = QNetwork(args, device)
+        # self.soft_q_net2 = QNetwork(args, device)
 
-        self.value_net1 = QNetwork(args, device)
-        self.value_net2 = QNetwork(args, device)
+        # if self.sac_v2:
+        #     self.target_q_net1 = QNetwork(args, device)
+        #     self.target_q_net2 = QNetwork(args, device)
+        # else:
+        #     self.value_net = ValueNetwork(args, device)
+        #     self.value_net_target = ValueNetwork(args, device)
 
-        self.value_net_target1 = deepcopy(self.value_net1)#QNetwork(args, device)
-        self.value_net_target2 = deepcopy(self.value_net2)  # QNetwork(args, device)
+        self.value_net = QNetwork(args, device)
+        self.value_net_target = deepcopy(self.value_net)  # QNetwork(args, device)
 
     def get_action(self, s, feat, mode='forward', worker_mode='training'):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
-        mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode=mode, worker_mode=worker_mode)
+        mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode='forward', worker_mode='training')
         return action.detach().cpu().numpy(), mu.detach().cpu().numpy(), sigma.detach().cpu().numpy()
 
     def get_action_no_noise(self, s, feat, mode='forward', worker_mode='training'):
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
-        mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode=mode, worker_mode='no noise')
+        mu, sigma, action, log_prob = self.policy_net.forward(s, feat, mode='forward', worker_mode='no noise')
         return action.detach().cpu().numpy(), mu.detach().cpu().numpy(), sigma.detach().cpu().numpy()
 
     def evaluate_policy(self, state, feat):  # evaluate batch
@@ -279,8 +240,8 @@ class ActorCritic(nn.Module):
         mu, sigma, action, log_prob = self.policy_net.forward(state, feat, mode='batch', worker_mode='no noise')
         return action, log_prob
 
-    def evaluate_target_policy_noise(self, state, feat):  # evaluate batch
-        mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='target')
+    def evaluate_target_policy_no_noise(self, state, feat):  # evaluate batch
+        mu, sigma, action, log_prob = self.policy_net_target.forward(state, feat, mode='batch', worker_mode='no noise')
         return action, log_prob
 
     def save(self, episode):
@@ -311,8 +272,8 @@ class ActorCritic(nn.Module):
         torch.save(self.policy_net_target, policy_net_target_path)
         # torch.save(self.soft_q_net1, soft_q_net1_path)
         # torch.save(self.soft_q_net2, soft_q_net2_path)
-        torch.save(self.value_net1, value_net_path)#TODO: update to include network 2
-        torch.save(self.value_net_target1, value_net_target_path)
+        torch.save(self.value_net, value_net_path)
+        torch.save(self.value_net_target, value_net_target_path)
 
 
 def NormedLinear(*args, scale=1.0):
@@ -340,11 +301,10 @@ class ExploratoryNoise:
         self.x0 = x0
         self.noise_model = noise_model
         self.reset()
-        self.noise = torch.distributions.Normal(0, self.sigma).rsample()
 
     def get_noise(self):
         if self.noise_model == 'normal_dist':
-            return self.noise
+            return torch.distributions.Normal(0, self.sigma).rsample()
 
         elif self.noise_model == 'ou_noise':
             x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt \
@@ -357,10 +317,3 @@ class ExploratoryNoise:
 
     def reset(self):
         self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
-        self.noise = torch.distributions.Normal(0, self.sigma).rsample()
-
-
-def NormedLinear(*args, scale=1.0):
-    out = nn.Linear(*args)
-    out.weight.data *= scale / out.weight.norm(dim=1, p=2, keepdim=True)
-    return out

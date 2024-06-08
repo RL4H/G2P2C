@@ -28,8 +28,8 @@ def set_args(args):
     # parameters important to SAC algo
     args.entropy_coef = 0.001  # 0.001 seems to work
     args.batch_size = 256 if args.debug == 0 else 64  # the mini_batch size
-    args.replay_buffer_size = 100000 if args.debug == 0 else 1024   # total <s,a,r,s'> pairs 100000
-    args.sample_size = 4096 if args.debug == 0 else 128  #256
+    args.replay_buffer_size = 100000 if args.debug == 0 else 1024   # total <s,a,r,s'> pairs
+    args.sample_size = 256 if args.debug == 0 else 128
 
     args.sac_v2 = True
 
@@ -38,7 +38,7 @@ def set_args(args):
     args.shuffle_rollout = True
     args.n_training_workers = 16 if args.debug == 0 else 2
     args.n_testing_workers = 20 if args.debug == 0 else 2
-    args.n_pi_epochs = 5  # can be used to increase number of epochs for all networks updates.
+    args.n_pi_epochs = 1  # can be used to increase number of epochs for all networks updates.
     # args.pi_lr = 1e-4 * 3  # 1e-4 * 3
     # args.vf_lr = 1e-4 * 3  # 1e-4 * 3
     args.grad_clip = 20

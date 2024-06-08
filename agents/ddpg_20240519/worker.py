@@ -8,7 +8,7 @@ from copy import deepcopy
 from collections import deque
 from utils.pumpAction import Pump
 from utils.core import get_env, time_in_range, custom_reward, combined_shape
-from agents.ddpg.core import Memory, StateSpace, composite_reward
+from agents.sac.core import Memory, StateSpace, composite_reward
 from agents.std_bb.BBController import BasalBolusController
 from utils.carb_counting import carb_estimate
 
@@ -71,14 +71,14 @@ class Worker:
         if self.reinit_flag:
             self.init_env()
 
-    def rollout(self, ddpg, replay_memory):
+    def rollout(self, sac, replay_memory):
         ri, alive_steps, normo, hypo, sev_hypo, hyper, lgbi, hgbi, sev_hyper = 0, 0, 0, 0, 0, 0, 0, 0, 0
         if self.worker_mode != 'training':  # fresh env for testing
             self.init_env()
         rollout_steps = self.update_timestep if self.worker_mode == 'training' else self.max_test_epi_len
 
         for n_steps in range(0, rollout_steps):
-            policy_step, mu, sigma = ddpg.get_action(self.cur_state, self.feat, worker_mode=self.worker_mode)
+            policy_step, mu, sigma = sac.get_action(self.cur_state, self.feat, worker_mode=self.worker_mode)
             selected_action = policy_step[0]
             rl_action, pump_action = self.pump.action(agent_action=selected_action, prev_state=self.init_state, prev_info=None)
             state, reward, is_done, info = self.env.step(pump_action)
@@ -100,13 +100,12 @@ class Worker:
                                    torch.as_tensor(self.feat, dtype=torch.float32, device=self.device).unsqueeze(0),
                                    torch.as_tensor([done_flag], dtype=torch.float32, device=self.device))
 
-
             # store -> rollout for training
             # if self.worker_mode == 'training':
             #     self.memory.store(this_state, this_feat, selected_action, reward, self.cur_state, self.feat, done_flag)
 
             self.episode_history[self.counter] = [self.episode, self.counter, state.CGM, info['meal'] * info['sample_time'],
-                                                  pump_action, reward, rl_action, mu[0], sigma[0], 0, 0, info['day_hour'],
+                                                  pump_action, reward, rl_action, mu[0], sigma[0], 0, 1, info['day_hour'],
                                                   info['day_min'], 0]
             self.counter += 1
             stop_factor = (self.max_epi_length - 1) if self.worker_mode == 'training' else (self.max_test_epi_len - 1)

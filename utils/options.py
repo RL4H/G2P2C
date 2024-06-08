@@ -134,6 +134,7 @@ class Options:
         self.parser.add_argument('--noise_std', type=float, default=0.01,
                                  help='Standard deviation for exploratory noise')
         self.parser.add_argument('--soft_tau', type=float, default=0.005, help='Tau for soft update')
+        self.parser.add_argument('--mu_penalty', type=int, default=1, help='Penalty applied to mu during policy optimisation -> 1 for penalty applied, 0 for no penalty')
         # self.parser.add_argument('--pi_lr', type=float, default=1e-4 * 3, help='Policy learning rate')
         # self.parser.add_argument('--vf_lr', type=float, default=1e-4 * 3, help='Value function learning rate')
 
