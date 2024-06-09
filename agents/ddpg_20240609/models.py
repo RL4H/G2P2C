@@ -64,24 +64,14 @@ class QvalModel(nn.Module):
         self.fc_layer2 = nn.Linear(self.last_hidden, self.last_hidden)
         self.fc_layer3 = nn.Linear(self.last_hidden, self.last_hidden)
 
-        self.bn_layer1 = nn.LayerNorm(self.last_hidden)
-        self.bn_layer2 = nn.LayerNorm(self.last_hidden)
-        self.bn_layer3 = nn.LayerNorm(self.last_hidden)
-
         self.q = nn.Linear(self.last_hidden, self.output)
 
     def forward(self, extract_state, action, mode):
         concat_dim = 1 if (mode == 'batch') else 0
         concat_state_action = torch.cat((extract_state, action), dim=concat_dim)
         fc_output1 = F.relu(self.fc_layer1(concat_state_action))
-        fc_output1 = self.bn_layer1(fc_output1)
-
         fc_output2 = F.relu(self.fc_layer2(fc_output1))
-        fc_output2 = self.bn_layer1(fc_output2)
-
         fc_output = F.relu(self.fc_layer3(fc_output2))
-        fc_output = self.bn_layer1(fc_output)
-
         qval = self.q(fc_output)
         return qval
 
@@ -103,11 +93,6 @@ class ActionModule(nn.Module):
         self.fc_layer1 = nn.Linear(self.feature_extractor, self.last_hidden)
         self.fc_layer2 = nn.Linear(self.last_hidden, self.last_hidden)
         self.fc_layer3 = nn.Linear(self.last_hidden, self.last_hidden)
-
-        self.bn_layer1 = nn.LayerNorm(self.last_hidden)
-        self.bn_layer2 = nn.LayerNorm(self.last_hidden)
-        self.bn_layer3 = nn.LayerNorm(self.last_hidden)
-
         self.mu = nn.Linear(self.last_hidden, self.output)
         # self.mu = NormedLinear(self.last_hidden, self.output, scale=0.1)
 
@@ -119,17 +104,8 @@ class ActionModule(nn.Module):
 
     def forward(self, extract_states, worker_mode='training'):
         fc_output1 = F.relu(self.fc_layer1(extract_states))
-        if worker_mode == 'training':
-            fc_output1 = self.bn_layer1(fc_output1)
-
         fc_output2 = F.relu(self.fc_layer2(fc_output1))
-        if worker_mode == 'training':
-            fc_output2 = self.bn_layer2(fc_output2)
-
         fc_output = F.relu(self.fc_layer3(fc_output2))
-        if worker_mode == 'training':
-            fc_output = self.bn_layer3(fc_output)
-
         mu = self.mu(fc_output)
         sigma = self.sigma(fc_output)  # * 0.66, + 1e-5
         log_std = torch.clamp(sigma, LOG_STD_MIN, LOG_STD_MAX)

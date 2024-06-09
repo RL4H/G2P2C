@@ -20,7 +20,8 @@ from collections import namedtuple, deque
 # python run_RL_agent.py --agent ddpg --folder_id PriorityExperienceReplay/DDPG/DDPG3_7 --patient_id 3 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-2  --seed 1 --de
 # bug 0
 
-# python run_RL_agent.py --agent ddpg --folder_id Experiment2_NoiseModel/Model_8/Limit_1/DecayingSigma_5e-1_rev1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --seed 3 --debug 0
+# python run_RL_agent.py --agent ddpg --folder_id Experiment2_NoiseModel/Model_8/Limit_1/DecayingSigma_5e-1_rev1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_nois
+# e --noise_std 5e-1  --seed 3 --debug 0
 
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
@@ -197,11 +198,8 @@ class DDPG:
             next_feat_batch = torch.cat(batch.next_feat)
             done_batch = torch.cat(batch.done).unsqueeze(1)
 
-            # value network (critic) update
-            self.ddpg.value_net.train()
+            # value network update
             new_action, next_log_prob = self.ddpg.evaluate_target_policy_no_noise(next_state_batch, next_feat_batch)
-            self.ddpg.value_net_target.eval()
-
             next_values = self.ddpg.value_net_target(next_state_batch, next_feat_batch, new_action)
             target_value = (reward_batch + (self.gamma * (1 - done_batch) * next_values))
 
@@ -316,10 +314,10 @@ class DDPG:
             self.ddpg.policy_net.ActionModule.policy_noise.reset()
 
             # if rollout >= 80 and rollout % 40 == 0:
-            # if rollout == 80:
-            #     self.ddpg.policy_net.ActionModule.policy_noise.sigma = self.ddpg.policy_net.ActionModule.policy_noise.sigma / 2
-            #     self.ddpg.policy_net.ActionModule.policy_noise.reset()
-            #     print("Reduced noise --> updated noise sigma is {}".format(self.ddpg.policy_net.ActionModule.policy_noise.sigma))
+            if rollout == 80:
+                self.ddpg.policy_net.ActionModule.policy_noise.sigma = self.ddpg.policy_net.ActionModule.policy_noise.sigma / 2
+                self.ddpg.policy_net.ActionModule.policy_noise.reset()
+                print("Reduced noise --> updated noise sigma is {}".format(self.ddpg.policy_net.ActionModule.policy_noise.sigma))
 
             # if rollout == 40:
             #     self.ddpg.policy_net.ActionModule.policy_noise.sigma = 2e-1
