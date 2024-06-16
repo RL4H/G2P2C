@@ -22,6 +22,9 @@ from collections import namedtuple, deque
 
 # python run_RL_agent.py --agent ddpg --folder_id Experiment2_NoiseModel/Model_8/Limit_1/DecayingSigma_5e-1_rev1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --seed 3 --debug 0
 
+# python run_RL_agent.py --agent ddpg --folder_id DDPG_LayerNorm_PostActivation_WithPenalty/OUNoise_Sigma_5e-1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --seed 3 --debug 0
+
+
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
 
@@ -198,9 +201,7 @@ class DDPG:
             done_batch = torch.cat(batch.done).unsqueeze(1)
 
             # value network (critic) update
-            self.ddpg.value_net.train()
             new_action, next_log_prob = self.ddpg.evaluate_target_policy_no_noise(next_state_batch, next_feat_batch)
-            self.ddpg.value_net_target.eval()
 
             next_values = self.ddpg.value_net_target(next_state_batch, next_feat_batch, new_action)
             target_value = (reward_batch + (self.gamma * (1 - done_batch) * next_values))
