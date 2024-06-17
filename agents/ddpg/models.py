@@ -108,8 +108,8 @@ class ActionModule(nn.Module):
         # self.bn_layer2 = nn.LayerNorm(self.last_hidden)
         # self.bn_layer3 = nn.LayerNorm(self.last_hidden)
 
-        self.mu = nn.Linear(self.last_hidden, self.output)
-        # self.mu = NormedLinear(self.last_hidden, self.output, scale=0.1)
+        # self.mu = nn.Linear(self.last_hidden, self.output)
+        self.mu = NormedLinear(self.last_hidden, self.output, scale=0.1)
 
         self.sigma = nn.Linear(self.last_hidden, self.output)
         self.normalDistribution = torch.distributions.Normal

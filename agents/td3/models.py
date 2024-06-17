@@ -93,8 +93,8 @@ class ActionModule(nn.Module):
         self.fc_layer1 = nn.Linear(self.feature_extractor, self.last_hidden)
         self.fc_layer2 = nn.Linear(self.last_hidden, self.last_hidden)
         self.fc_layer3 = nn.Linear(self.last_hidden, self.last_hidden)
-        # self.mu = nn.Linear(self.last_hidden, self.output)
-        self.mu = NormedLinear(self.last_hidden, self.output, scale=0.1)
+        self.mu = nn.Linear(self.last_hidden, self.output)
+        # self.mu = NormedLinear(self.last_hidden, self.output, scale=0.1)
 
         self.sigma = nn.Linear(self.last_hidden, self.output)
         self.normalDistribution = torch.distributions.Normal
@@ -111,7 +111,7 @@ class ActionModule(nn.Module):
         sigma = self.sigma(fc_output)  # * 0.66, + 1e-5
         log_std = torch.clamp(sigma, LOG_STD_MIN, LOG_STD_MAX)
         action_std = torch.exp(log_std)
-        dst = self.normalDistribution(mu, action_std)
+        # dst = self.normalDistribution(mu, action_std)
 
         if worker_mode == 'training':
             noise_value = self.policy_noise.get_noise()

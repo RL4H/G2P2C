@@ -133,6 +133,13 @@ class DDPG:
         self.grad_clip = args.grad_clip
 
         self.mu_penalty = args.mu_penalty
+        self.action_penalty_limit = args.action_penalty_limit
+        self.action_penalty_coef = args.action_penalty_coef
+
+        self.replay_buffer_type = args.replay_buffer_type
+        self.replay_buffer_alpha = args.replay_buffer_alpha
+        self.replay_buffer_beta = args.replay_buffer_beta
+
 
         self.weight_decay = 0.01
 
@@ -153,7 +160,12 @@ class DDPG:
         for p in self.ddpg.value_net_target.parameters():
             p.requires_grad = False
 
-        self.replay_memory = ReplayMemory(self.replay_buffer_size)
+        if self.replay_buffer_type == "random":
+            self.replay_memory = ReplayMemory(self.replay_buffer_size)
+        elif self.replay_buffer_type == "per_tderror":
+            self.replay_memory = PrioritisedExperienceReplayMemory(self.replay_buffer_size, alpha=self.replay_buffer_alpha)
+        else:
+            print("Incorrect replay buffer type")
 
         print('Policy Parameters: {}'.format(
             sum(p.numel() for p in self.ddpg.policy_net.parameters() if p.requires_grad)))
@@ -187,9 +199,11 @@ class DDPG:
 
         for i in range(self.train_pi_iters):
             # sample from buffer
-            transitions = self.replay_memory.sample(self.sample_size)
-            # transitions, indices, weights = self.replay_memory.sample(self.sample_size)
-            # weights = torch.tensor(weights, dtype=torch.float32, device=self.device)
+            if self.replay_buffer_type == "random":
+                transitions = self.replay_memory.sample(self.sample_size)
+            elif self.replay_buffer_type == "per_tderror":
+                transitions, indices, weights = self.replay_memory.sample(self.sample_size,beta=self.replay_buffer_beta)
+                weights = torch.tensor(weights, dtype=torch.float32, device=self.device)
 
             batch = Transition(*zip(*transitions))
             cur_state_batch = torch.cat(batch.state)
@@ -208,10 +222,12 @@ class DDPG:
 
             predicted_value = self.ddpg.value_net(cur_state_batch, cur_feat_batch, actions_batch)
 
-            value_loss = self.value_criterion(target_value.detach(), predicted_value)
-            # td_error = predicted_value - target_value
-            # value_loss = (td_error.pow(2) * weights).mean()
-            # self.replay_memory.update_priorities(indices, np.abs(td_error.cpu().detach().numpy()))
+            if self.replay_buffer_type =="random":
+                value_loss = self.value_criterion(target_value.detach(), predicted_value)
+            elif self.replay_buffer_type == "per_tderror":
+                td_error = predicted_value - target_value
+                value_loss = (td_error.pow(2) * weights).mean()
+                self.replay_memory.update_priorities(indices, np.abs(td_error.cpu().detach().numpy()))
 
             self.value_optimizer.zero_grad()
             value_loss.backward()
@@ -232,8 +248,12 @@ class DDPG:
             policy_action, _ = self.ddpg.evaluate_policy_no_noise(cur_state_batch, cur_feat_batch)
             policy_loss = self.ddpg.value_net(cur_state_batch, cur_feat_batch, policy_action)
             # policy_loss = (-1 * policy_loss * weights).mean() + self.mu_penalty * action_penalty(policy_action)
-            policy_loss = (-1 * policy_loss).mean() + self.mu_penalty * action_penalty(policy_action)
+            if self.replay_buffer_type == "random":
+                policy_loss = (-1 * policy_loss).mean()
+            elif self.replay_buffer_type == "per_tderror":
+                policy_loss = (-1 * policy_loss * weights).mean()
 
+            policy_loss += self.mu_penalty * action_penalty(policy_action, lower_bound=-self.action_penalty_limit,upper_bound=self.action_penalty_limit, penalty_factor=self.action_penalty_coef)
 
             self.policy_optimizer.zero_grad()
             policy_loss.backward()
