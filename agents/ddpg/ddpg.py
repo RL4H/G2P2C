@@ -64,12 +64,22 @@ class PrioritisedExperienceReplayMemory(object):
         self.priorities[self.position] = max_priority if max_priority > 0 else 1.0
         self.position = (self.position + 1) % self.capacity
 
-    def sample(self, batch_size, beta=0.4):
+    def sample(self, batch_size, beta=0.4, buffer_type = "per_proportional"):
         if len(self.memory) == self.capacity:
             priorities = self.priorities
         else:
             priorities = self.priorities[:self.position]
-        probabilities = priorities ** self.alpha
+
+        # Rank the priorities
+        ranked_indices = np.argsort(priorities)
+        ranks = np.empty_like(ranked_indices)
+        ranks[ranked_indices] = np.arange(len(priorities))
+
+        if buffer_type == "per_proportional":
+            probabilities = priorities ** self.alpha # Temporal difference based probability
+        elif buffer_type == "per_rank":
+            probabilities = (1 / (ranks + 1)) ** self.alpha  # Rank based probability
+
         sum_probabilities = probabilities.sum()
         if sum_probabilities == 0:
             probabilities = np.ones_like(probabilities) / len(probabilities)
@@ -97,7 +107,7 @@ class PrioritisedExperienceReplayMemory(object):
 
     def update_priorities(self, batch_indices, batch_priorities):
         for idx, priority in zip(batch_indices, batch_priorities):
-            self.priorities[idx] = priority + 1e-7
+            self.priorities[idx] = priority + 1e-8
 
     def __len__(self):
         return len(self.memory)
@@ -140,7 +150,6 @@ class DDPG:
         self.replay_buffer_alpha = args.replay_buffer_alpha
         self.replay_buffer_beta = args.replay_buffer_beta
 
-
         self.weight_decay = 0.01
 
         ### DDPG networks:
@@ -162,8 +171,9 @@ class DDPG:
 
         if self.replay_buffer_type == "random":
             self.replay_memory = ReplayMemory(self.replay_buffer_size)
-        elif self.replay_buffer_type == "per_tderror":
-            self.replay_memory = PrioritisedExperienceReplayMemory(self.replay_buffer_size, alpha=self.replay_buffer_alpha)
+        elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
+            self.replay_memory = PrioritisedExperienceReplayMemory(self.replay_buffer_size,
+                                                                   alpha=self.replay_buffer_alpha)
         else:
             print("Incorrect replay buffer type")
 
@@ -201,8 +211,9 @@ class DDPG:
             # sample from buffer
             if self.replay_buffer_type == "random":
                 transitions = self.replay_memory.sample(self.sample_size)
-            elif self.replay_buffer_type == "per_tderror":
-                transitions, indices, weights = self.replay_memory.sample(self.sample_size,beta=self.replay_buffer_beta)
+            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
+                transitions, indices, weights = self.replay_memory.sample(self.sample_size,
+                                                                          beta=self.replay_buffer_beta, buffer_type=self.replay_buffer_type)
                 weights = torch.tensor(weights, dtype=torch.float32, device=self.device)
 
             batch = Transition(*zip(*transitions))
@@ -222,9 +233,9 @@ class DDPG:
 
             predicted_value = self.ddpg.value_net(cur_state_batch, cur_feat_batch, actions_batch)
 
-            if self.replay_buffer_type =="random":
+            if self.replay_buffer_type == "random":
                 value_loss = self.value_criterion(target_value.detach(), predicted_value)
-            elif self.replay_buffer_type == "per_tderror":
+            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_error":
                 td_error = predicted_value - target_value
                 value_loss = (td_error.pow(2) * weights).mean()
                 self.replay_memory.update_priorities(indices, np.abs(td_error.cpu().detach().numpy()))
@@ -250,10 +261,12 @@ class DDPG:
             # policy_loss = (-1 * policy_loss * weights).mean() + self.mu_penalty * action_penalty(policy_action)
             if self.replay_buffer_type == "random":
                 policy_loss = (-1 * policy_loss).mean()
-            elif self.replay_buffer_type == "per_tderror":
+            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_error":
                 policy_loss = (-1 * policy_loss * weights).mean()
 
-            policy_loss += self.mu_penalty * action_penalty(policy_action, lower_bound=-self.action_penalty_limit,upper_bound=self.action_penalty_limit, penalty_factor=self.action_penalty_coef)
+            policy_loss += self.mu_penalty * action_penalty(policy_action, lower_bound=-self.action_penalty_limit,
+                                                            upper_bound=self.action_penalty_limit,
+                                                            penalty_factor=self.action_penalty_coef)
 
             self.policy_optimizer.zero_grad()
             policy_loss.backward()
