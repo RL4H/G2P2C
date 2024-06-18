@@ -236,7 +236,7 @@ class DDPG:
 
             if self.replay_buffer_type == "random":
                 value_loss = self.value_criterion(target_value.detach(), predicted_value)
-            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_error":
+            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
                 td_error = predicted_value - target_value
                 value_loss = (td_error.pow(2) * weights).mean()
                 self.replay_memory.update_priorities(indices, np.abs(td_error.cpu().detach().numpy()))
@@ -262,7 +262,7 @@ class DDPG:
             # policy_loss = (-1 * policy_loss * weights).mean() + self.mu_penalty * action_penalty(policy_action)
             if self.replay_buffer_type == "random":
                 policy_loss = (-1 * policy_loss).mean()
-            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_error":
+            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
                 policy_loss = (-1 * policy_loss * weights).mean()
 
             policy_loss += self.mu_penalty * action_penalty(policy_action, lower_bound=-self.action_penalty_limit,
