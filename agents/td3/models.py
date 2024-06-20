@@ -101,6 +101,8 @@ class ActionModule(nn.Module):
         self.noise_model = args.noise_model
         self.noise_std = args.noise_std
         self.policy_noise = ExploratoryNoise(0, self.noise_std, noise_model=self.noise_model)
+        self.noise_application = args.noise_application
+
 
 
     def forward(self, extract_states, worker_mode='training'):
@@ -117,31 +119,41 @@ class ActionModule(nn.Module):
             noise_value = self.policy_noise.get_noise()
 
             # Noise Model 0 - Same as paper
-            action = torch.tanh(mu + (torch.randn_like(mu) * 0.1))# Value from Fujimoto et al (2018) paper
+            if self.noise_application == 0:
+                action = torch.tanh(mu + (torch.randn_like(mu) * 0.1))# Value from Fujimoto et al (2018) paper
 
             # Noise Model 1 - Additive to mu
-            # action = torch.tanh(mu + noise_value)
+            elif self.noise_application == 1:
+                action = torch.tanh(mu + noise_value)
 
             # Noise Model 2 - Multiplicative to mu
-            # action = torch.tanh((1+noise_value)*mu)
+            elif self.noise_application == 2:
+                action = torch.tanh((1 + noise_value) * mu)
 
             # Noise Model 3 - Additive to tanh(mu) with clamp [-1,1]
-            # action = torch.tanh(mu) + noise_value
-            # action = torch.clamp(action, min=-1, max=1)
+            elif self.noise_application == 3:
+                action = torch.tanh(mu) + noise_value
+                action = torch.clamp(action, min=-1, max=1)
 
             # Noise Model 4 - Multiplicative to tanh(mu) with clamp [-1,1]
-            # action = torch.tanh(mu) * (1 + noise_value)
-            # action = torch.clamp(action, min=-1, max=1)
+            elif self.noise_application == 4:
+                action = torch.tanh(mu) * (1 + noise_value)
+                action = torch.clamp(action, min=-1, max=1)
 
             # Noise Model 5 - Additive to scaled tanh(mu) then passed through tanh
-            # mu_scale = 1.5
-            # action = mu_scale * torch.tanh(mu) + noise_value
-            # action = torch.tanh(action)
+            elif self.noise_application == 5:
+                mu_scale = 2
+                action = mu_scale * torch.tanh(mu) + noise_value
+                action = torch.tanh(action)
 
             # Noise Model 6 - Multiplicative to scaled tanh(mu) then passed through tanh
-            # mu_scale = 2
-            # action = mu_scale * torch.tanh(mu)* (1 + noise_value)
-            # action = torch.tanh(action)
+            elif self.noise_application == 6:
+                mu_scale = 2
+                action = mu_scale * torch.tanh(mu) * (1 + noise_value)
+                action = torch.tanh(action)
+
+            else:
+                print("Invalid noise application code")
 
         elif worker_mode == 'target':
             # gaussian_action = mu + self.normalDistribution(0, self.noise_std).rsample()  # dst.rsample()
@@ -344,7 +356,7 @@ class ExploratoryNoise:
 
     def get_noise(self):
         if self.noise_model == 'normal_dist':
-            return self.noise
+            return torch.distributions.Normal(0, self.sigma).rsample()
 
         elif self.noise_model == 'ou_noise':
             x = self.x_prev + self.theta * (self.mu - self.x_prev) * self.dt \

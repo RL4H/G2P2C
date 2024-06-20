@@ -131,6 +131,8 @@ class Options:
         # DDPG - 2024 implementation
         self.parser.add_argument('--noise_model', type=str, default='normal_dist',
                                  help='Noise model for applying exploratory noise to policy')
+        self.parser.add_argument('--noise_application', type=int, default=1,
+                                 help='Noise application method for policy exploration')
         self.parser.add_argument('--noise_std', type=float, default=0.01,
                                  help='Standard deviation for exploratory noise')
         self.parser.add_argument('--soft_tau', type=float, default=0.005, help='Tau for soft update')
