@@ -48,12 +48,15 @@ class ReplayMemory(object):
 
 
 class PrioritisedExperienceReplayMemory(object):
-    def __init__(self, capacity, alpha=0.6):
+    def __init__(self, capacity, alpha=0.6, temporal_decay = 1):
         self.memory = deque([], maxlen=capacity)
         self.capacity = capacity
         self.priorities = np.zeros((capacity,), dtype=np.float32)
         self.position = 0
         self.alpha = alpha
+        self.temporal_decay = temporal_decay  # Decay factor for temporal weighting
+        self.timestamps = np.zeros((capacity,), dtype=np.float32)  # Track when each sample was added
+        self.current_time = 0  # Incremental time counter to simulate timestamps
 
     def push(self, *args):
         '''Save a transition with a maximum priority initially'''
@@ -63,13 +66,17 @@ class PrioritisedExperienceReplayMemory(object):
         else:
             self.memory[self.position] = Transition(*args)
         self.priorities[self.position] = max_priority if max_priority > 0 else 1.0
+        self.timestamps[self.position] = self.current_time  # Set the timestamp
         self.position = (self.position + 1) % self.capacity
+        self.current_time += 1  # Increment the time counter
 
-    def sample(self, batch_size, beta=0.4, buffer_type = "per_proportional"):
+    def sample(self, batch_size, beta=0.4, buffer_type="per_proportional"):
         if len(self.memory) == self.capacity:
             priorities = self.priorities
+            timestamps = self.timestamps
         else:
             priorities = self.priorities[:self.position]
+            timestamps = self.timestamps[:self.position]
 
         # Rank the priorities
         ranked_indices = np.argsort(priorities)
@@ -77,23 +84,26 @@ class PrioritisedExperienceReplayMemory(object):
         ranks[ranked_indices] = np.arange(len(priorities))
 
         if buffer_type == "per_proportional":
-            probabilities = priorities ** self.alpha # Temporal difference based probability
+            probabilities = priorities ** self.alpha  # Temporal difference based probability
         elif buffer_type == "per_rank":
             probabilities = (1 / (ranks + 1)) ** self.alpha  # Rank based probability
 
-        sum_probabilities = probabilities.sum()
+        # Apply temporal decay factor to the probabilities
+        # decay_weights = np.exp(-self.temporal_decay * (self.current_time - timestamps))
+        decay_weights = self.temporal_decay ** (self.current_time - timestamps)
+        adjusted_probabilities = probabilities * decay_weights
+
+        # Normalize the probabilities
+        sum_probabilities = adjusted_probabilities.sum()
         if sum_probabilities == 0:
-            probabilities = np.ones_like(probabilities) / len(probabilities)
+            probabilities = np.ones_like(adjusted_probabilities) / len(adjusted_probabilities)
         else:
-            probabilities /= sum_probabilities
+            probabilities = adjusted_probabilities / sum_probabilities
 
         if np.isnan(probabilities).any():
             print('Nan probabilities found')
             print(probabilities)
             probabilities = np.ones_like(probabilities) / len(probabilities)
-
-        else:
-            probabilities /= probabilities.sum()
 
         indices = np.random.choice(len(self.memory), batch_size, p=probabilities)
         samples = [self.memory[idx] for idx in indices]
@@ -112,6 +122,7 @@ class PrioritisedExperienceReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
+
 
 
 class DDPG:

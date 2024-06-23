@@ -37,12 +37,15 @@ class ReplayMemory(object):
 
 
 class PrioritisedExperienceReplayMemory(object):
-    def __init__(self, capacity, alpha=0.6):
+    def __init__(self, capacity, alpha=0.6, temporal_decay=1):
         self.memory = deque([], maxlen=capacity)
         self.capacity = capacity
         self.priorities = np.zeros((capacity,), dtype=np.float32)
         self.position = 0
         self.alpha = alpha
+        self.temporal_decay = temporal_decay  # Decay factor for temporal weighting
+        self.timestamps = np.zeros((capacity,), dtype=np.float32)  # Track when each sample was added
+        self.current_time = 0  # Incremental time counter to simulate timestamps
 
     def push(self, *args):
         '''Save a transition with a maximum priority initially'''
@@ -52,27 +55,44 @@ class PrioritisedExperienceReplayMemory(object):
         else:
             self.memory[self.position] = Transition(*args)
         self.priorities[self.position] = max_priority if max_priority > 0 else 1.0
+        self.timestamps[self.position] = self.current_time  # Set the timestamp
         self.position = (self.position + 1) % self.capacity
+        self.current_time += 1  # Increment the time counter
 
-    def sample(self, batch_size, beta=0.4):
+    def sample(self, batch_size, beta=0.4, buffer_type="per_proportional"):
         if len(self.memory) == self.capacity:
             priorities = self.priorities
+            timestamps = self.timestamps
         else:
             priorities = self.priorities[:self.position]
-        probabilities = priorities ** self.alpha
-        sum_probabilities = probabilities.sum()
+            timestamps = self.timestamps[:self.position]
+
+        # Rank the priorities
+        ranked_indices = np.argsort(priorities)
+        ranks = np.empty_like(ranked_indices)
+        ranks[ranked_indices] = np.arange(len(priorities))
+
+        if buffer_type == "per_proportional":
+            probabilities = priorities ** self.alpha  # Temporal difference based probability
+        elif buffer_type == "per_rank":
+            probabilities = (1 / (ranks + 1)) ** self.alpha  # Rank based probability
+
+        # Apply temporal decay factor to the probabilities
+        # decay_weights = np.exp(-self.temporal_decay * (self.current_time - timestamps))
+        decay_weights = self.temporal_decay ** (self.current_time - timestamps)
+        adjusted_probabilities = probabilities * decay_weights
+
+        # Normalize the probabilities
+        sum_probabilities = adjusted_probabilities.sum()
         if sum_probabilities == 0:
-            probabilities = np.ones_like(probabilities) / len(probabilities)
+            probabilities = np.ones_like(adjusted_probabilities) / len(adjusted_probabilities)
         else:
-            probabilities /= sum_probabilities
+            probabilities = adjusted_probabilities / sum_probabilities
 
         if np.isnan(probabilities).any():
             print('Nan probabilities found')
             print(probabilities)
             probabilities = np.ones_like(probabilities) / len(probabilities)
-
-        else:
-            probabilities /= probabilities.sum()
 
         indices = np.random.choice(len(self.memory), batch_size, p=probabilities)
         samples = [self.memory[idx] for idx in indices]
@@ -87,7 +107,7 @@ class PrioritisedExperienceReplayMemory(object):
 
     def update_priorities(self, batch_indices, batch_priorities):
         for idx, priority in zip(batch_indices, batch_priorities):
-            self.priorities[idx] = priority + 1e-7
+            self.priorities[idx] = priority + 1e-8
 
     def __len__(self):
         return len(self.memory)
@@ -123,6 +143,12 @@ class TD3:
         self.grad_clip = args.grad_clip
 
         self.mu_penalty = args.mu_penalty
+        self.action_penalty_limit = args.action_penalty_limit
+        self.action_penalty_coef = args.action_penalty_coef
+
+        self.replay_buffer_type = args.replay_buffer_type
+        self.replay_buffer_alpha = args.replay_buffer_alpha
+        self.replay_buffer_beta = args.replay_buffer_beta
 
         self.weight_decay = 0
 
@@ -131,9 +157,9 @@ class TD3:
         self.value_criterion1 = nn.MSELoss()
         self.value_criterion2 = nn.MSELoss()
         self.value_optimizer1 = torch.optim.Adam(self.td3.value_net1.parameters(), lr=self.value_lr,
-                                                weight_decay=self.weight_decay)
+                                                 weight_decay=self.weight_decay)
         self.value_optimizer2 = torch.optim.Adam(self.td3.value_net2.parameters(), lr=self.value_lr,
-                                                weight_decay=self.weight_decay)
+                                                 weight_decay=self.weight_decay)
         self.policy_optimizer = torch.optim.Adam(self.td3.policy_net.parameters(), lr=self.policy_lr,
                                                  weight_decay=self.weight_decay)
         for target_param, param in zip(self.td3.policy_net.parameters(), self.td3.policy_net_target.parameters()):
@@ -152,14 +178,22 @@ class TD3:
         for p in self.td3.value_net_target2.parameters():
             p.requires_grad = False
 
-        self.replay_memory = ReplayMemory(self.replay_buffer_size)
+        if self.replay_buffer_type == "random":
+            self.replay_memory = ReplayMemory(self.replay_buffer_size)
+        elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
+            self.replay_memory = PrioritisedExperienceReplayMemory(self.replay_buffer_size,
+                                                                   alpha=self.replay_buffer_alpha)
+        else:
+            print("Incorrect replay buffer type")
 
         print('Policy Parameters: {}'.format(
             sum(p.numel() for p in self.td3.policy_net.parameters() if p.requires_grad)))
         print(
-            'Value network 1 Parameters: {}'.format(sum(p.numel() for p in self.td3.value_net1.parameters() if p.requires_grad)))
+            'Value network 1 Parameters: {}'.format(
+                sum(p.numel() for p in self.td3.value_net1.parameters() if p.requires_grad)))
         print(
-            'Value network 2 Parameters: {}'.format(sum(p.numel() for p in self.td3.value_net2.parameters() if p.requires_grad)))
+            'Value network 2 Parameters: {}'.format(
+                sum(p.numel() for p in self.td3.value_net2.parameters() if p.requires_grad)))
 
         self.save_log([['policy_loss', 'value_loss', 'pi_grad', 'val_grad']], '/model_log')
         self.model_logs = torch.zeros(4, device=self.device)
@@ -188,9 +222,13 @@ class TD3:
 
         for i in range(self.train_pi_iters):
             # sample from buffer
-            transitions = self.replay_memory.sample(self.sample_size)
-            # transitions, indices, weights = self.replay_memory.sample(self.sample_size)
-            # weights = torch.tensor(weights, dtype=torch.float32, device=self.device)
+            if self.replay_buffer_type == "random":
+                transitions = self.replay_memory.sample(self.sample_size)
+            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
+                transitions, indices, weights = self.replay_memory.sample(self.sample_size,
+                                                                          beta=self.replay_buffer_beta,
+                                                                          buffer_type=self.replay_buffer_type)
+                weights = torch.tensor(weights, dtype=torch.float32, device=self.device)
 
             batch = Transition(*zip(*transitions))
             cur_state_batch = torch.cat(batch.state)
@@ -253,9 +291,15 @@ class TD3:
                 policy_action, _ = self.td3.evaluate_policy_no_noise(cur_state_batch, cur_feat_batch)
                 policy_loss = torch.min(self.td3.value_net1(cur_state_batch, cur_feat_batch, policy_action),
                                         self.td3.value_net2(cur_state_batch, cur_feat_batch, policy_action))
-                policy_loss = (-1 * policy_loss).mean() + self.mu_penalty * action_penalty(policy_action)
-                # policy_loss = (-1 * policy_loss * weights).mean() + self.mu_penalty * action_penalty(policy_action)
 
+                if self.replay_buffer_type == "random":
+                    policy_loss = (-1 * policy_loss).mean()
+                elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
+                    policy_loss = (-1 * policy_loss * weights).mean()
+
+                policy_loss += self.mu_penalty * action_penalty(policy_action, lower_bound=-self.action_penalty_limit,
+                                                                upper_bound=self.action_penalty_limit,
+                                                                penalty_factor=self.action_penalty_coef)
 
                 self.policy_optimizer.zero_grad()
                 policy_loss.backward()
@@ -275,7 +319,7 @@ class TD3:
                 for p in self.td3.value_net_target2.parameters():
                     p.requires_grad = True
 
-                #Update target networks
+                # Update target networks
                 with torch.no_grad():
                     print("################updated target networks")
                     for param, target_param in zip(self.td3.value_net1.parameters(),
@@ -291,8 +335,6 @@ class TD3:
                                                    self.td3.policy_net_target.parameters()):
                         target_param.data.mul_((1 - self.soft_tau))
                         target_param.data.add_(self.soft_tau * param.data)
-
-
 
         self.model_logs[0] = cl  # value loss or coeff loss
         self.model_logs[1] = pl

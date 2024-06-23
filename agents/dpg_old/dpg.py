@@ -9,22 +9,12 @@ import torch.nn as nn
 import numpy as np
 from copy import deepcopy
 from utils.reward_normalizer import RewardNormalizer, update_mean_var_count_from_moments
-from agents.dpg.worker import Worker
-from agents.dpg.models import ActorCritic
+from agents.ddpg.worker import Worker
+from agents.ddpg.models import ActorCritic
 from collections import namedtuple, deque
 
-# python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.001 --noise_model normal_dist --seed 1 --debug 1
+#python run_RL_agent.py --agent dpg --folder_id preNCI_testrun/DPG/DPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda  --pi_lr 5e-4 --vf_lr 5e-4 --noise_model ou_noise --noise_std 1e-0  --seed 1 --debug 0
 
-# python run_RL_agent.py --agent ddpg --folder_id LR/1e-5/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-5 --vf_lr 1e-5 --seed 1 --debug 0
-# python run_RL_agent.py --agent ddpg --folder_id preNCI_testrun/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-4 --noise_model ou_noise --noise_std 1e-1  --seed 1 --debug 0
-# python run_RL_agent.py --agent ddpg --folder_id PriorityExperienceReplay/DDPG/DDPG3_7 --patient_id 3 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-2  --seed 1 --de
-# bug 0
-
-# python run_RL_agent.py --agent ddpg --folder_id Experiment2_NoiseModel/Model_8/Limit_1/DecayingSigma_5e-1_rev1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --seed 3 --debug 0
-
-# python run_RL_agent.py --agent ddpg --folder_id DDPG_LayerNorm_PostActivation_WithPenalty/OUNoise_Sigma_5e-1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --seed 3 --debug 0
-
-# python run_RL_agent.py --agent ddpg --folder_id DDPG_PERBuffer/per_rank/OUNoise_Sigma_5e-1/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --replay_buffer_type per_rank --seed 1 --debug 0
 
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
@@ -38,77 +28,15 @@ class ReplayMemory(object):
 
     def push(self, *args):
         """Save a transition"""
+        # if len(self.memory) + len(Transition(*args)) >= self.capacity:
+        #     # Randomly remove one element if memory is full
+        #     for i in range(len(Transition(*args))):
+        #         remove_index = random.randint(0, len(self.memory) - 1)
+        #         self.memory.remove(self.memory[remove_index])
         self.memory.append(Transition(*args))
 
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)
-
-    def __len__(self):
-        return len(self.memory)
-
-
-class PrioritisedExperienceReplayMemory(object):
-    def __init__(self, capacity, alpha=0.6):
-        self.memory = deque([], maxlen=capacity)
-        self.capacity = capacity
-        self.priorities = np.zeros((capacity,), dtype=np.float32)
-        self.position = 0
-        self.alpha = alpha
-
-    def push(self, *args):
-        '''Save a transition with a maximum priority initially'''
-        max_priority = self.priorities.max() if self.memory else 1.0
-        if len(self.memory) < self.capacity:
-            self.memory.append(Transition(*args))
-        else:
-            self.memory[self.position] = Transition(*args)
-        self.priorities[self.position] = max_priority if max_priority > 0 else 1.0
-        self.position = (self.position + 1) % self.capacity
-
-    def sample(self, batch_size, beta=0.4, buffer_type = "per_proportional"):
-        if len(self.memory) == self.capacity:
-            priorities = self.priorities
-        else:
-            priorities = self.priorities[:self.position]
-
-        # Rank the priorities
-        ranked_indices = np.argsort(priorities)
-        ranks = np.empty_like(ranked_indices)
-        ranks[ranked_indices] = np.arange(len(priorities))
-
-        if buffer_type == "per_proportional":
-            probabilities = priorities ** self.alpha # Temporal difference based probability
-        elif buffer_type == "per_rank":
-            probabilities = (1 / (ranks + 1)) ** self.alpha  # Rank based probability
-
-        sum_probabilities = probabilities.sum()
-        if sum_probabilities == 0:
-            probabilities = np.ones_like(probabilities) / len(probabilities)
-        else:
-            probabilities /= sum_probabilities
-
-        if np.isnan(probabilities).any():
-            print('Nan probabilities found')
-            print(probabilities)
-            probabilities = np.ones_like(probabilities) / len(probabilities)
-
-        else:
-            probabilities /= probabilities.sum()
-
-        indices = np.random.choice(len(self.memory), batch_size, p=probabilities)
-        samples = [self.memory[idx] for idx in indices]
-
-        # Compute importance-sampling weights
-        total = len(self.memory)
-        weights = (total * probabilities[indices]) ** (-beta)
-        weights /= weights.max()
-        weights = np.array(weights, dtype=np.float32)
-
-        return samples, indices, weights
-
-    def update_priorities(self, batch_indices, batch_priorities):
-        for idx, priority in zip(batch_indices, batch_priorities):
-            self.priorities[idx] = priority + 1e-8
 
     def __len__(self):
         return len(self.memory)
@@ -132,7 +60,7 @@ class DPG:
         self.batch_size = args.batch_size
         self.sample_size = args.sample_size
 
-        # self.target_update_interval = 1  # 100
+        self.target_update_interval = 1  # 100
         self.n_updates = 0
 
         self.soft_tau = args.soft_tau
@@ -143,23 +71,44 @@ class DPG:
         self.policy_lr = args.pi_lr
         self.grad_clip = args.grad_clip
 
-        self.mu_penalty = args.mu_penalty
-        self.action_penalty_limit = args.action_penalty_limit
-        self.action_penalty_coef = args.action_penalty_coef
+        # self.entropy_coef = 0.1  #0.001  # args.entropy_coef
+        # self.target_entropy = -1  # 0.001
+        # self.entropy_lr = 1e-4 * 3
+        # self.log_ent_coef = torch.log(torch.ones(1, device=self.device) * self.entropy_coef).requires_grad_(True)
+        # self.ent_coef_optimizer = torch.optim.Adam([self.log_ent_coef], lr=self.entropy_lr)
 
-        self.replay_buffer_type = args.replay_buffer_type
-        self.replay_buffer_alpha = args.replay_buffer_alpha
-        self.replay_buffer_beta = args.replay_buffer_beta
+        # self.sac_v2 = args.sac_v2
 
-        self.weight_decay = 0.01
+        self.weight_decay = 0
 
-        ### DPG networks:
+        ### DDPG networks:
         self.dpg = ActorCritic(args, load, path1, path2, device).to(self.device)
+        # self.soft_q_criterion1 = nn.MSELoss()
+        # self.soft_q_criterion2 = nn.MSELoss()
         self.value_criterion = nn.MSELoss()
+        # self.soft_q_optimizer1 = torch.optim.Adam(self.ddpg.soft_q_net1.parameters(), lr=self.soft_q_lr, weight_decay=self.weight_decay)
+        # self.soft_q_optimizer2 = torch.optim.Adam(self.ddpg.soft_q_net2.parameters(), lr=self.soft_q_lr, weight_decay=self.weight_decay)
         self.value_optimizer = torch.optim.Adam(self.dpg.value_net.parameters(), lr=self.value_lr,
                                                 weight_decay=self.weight_decay)
         self.policy_optimizer = torch.optim.Adam(self.dpg.policy_net.parameters(), lr=self.policy_lr,
-                                                 weight_decay=0)
+                                                 weight_decay=self.weight_decay)
+
+        # if self.sac_v2:
+        #     for target_param, param in zip(self.ddpg.target_q_net1.parameters(), self.ddpg.soft_q_net1.parameters()):
+        #         target_param.data.copy_(param.data)
+        #     for target_param, param in zip(self.ddpg.target_q_net2.parameters(), self.ddpg.soft_q_net2.parameters()):
+        #         target_param.data.copy_(param.data)
+        #     for p in self.ddpg.target_q_net1.parameters():
+        #         p.requires_grad = False
+        #     for p in self.ddpg.target_q_net2.parameters():
+        #         p.requires_grad = False
+        # else:
+        #     self.value_criterion = nn.MSELoss()
+        #     self.value_optimizer = torch.optim.Adam(self.ddpg.value_net.parameters(), lr=self.soft_q_lr, weight_decay=self.weight_decay)
+        #     for target_param, param in zip(self.ddpg.value_net_target.parameters(), self.ddpg.value_net.parameters()):
+        #         target_param.data.copy_(param.data)
+        #     for p in self.ddpg.value_net_target.parameters():
+        #         p.requires_grad = False
 
         # for target_param, param in zip(self.dpg.value_net.parameters(), self.dpg.value_net_target.parameters()):
         #     target_param.data.copy_(param.data)
@@ -170,16 +119,12 @@ class DPG:
         # for p in self.dpg.value_net_target.parameters():
         #     p.requires_grad = False
 
-        if self.replay_buffer_type == "random":
-            self.replay_memory = ReplayMemory(self.replay_buffer_size)
-        elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
-            self.replay_memory = PrioritisedExperienceReplayMemory(self.replay_buffer_size,
-                                                                   alpha=self.replay_buffer_alpha)
-        else:
-            print("Incorrect replay buffer type")
+        self.replay_memory = ReplayMemory(self.replay_buffer_size)
 
         print('Policy Parameters: {}'.format(
             sum(p.numel() for p in self.dpg.policy_net.parameters() if p.requires_grad)))
+        # print('Q1 Parameters: {}'.format(sum(p.numel() for p in self.ddpg.soft_q_net1.parameters() if p.requires_grad)))
+        # print('Q2 Parameters: {}'.format(sum(p.numel() for p in self.ddpg.soft_q_net2.parameters() if p.requires_grad)))
         print(
             'Value Parameters: {}'.format(sum(p.numel() for p in self.dpg.value_net.parameters() if p.requires_grad)))
 
@@ -210,13 +155,7 @@ class DPG:
 
         for i in range(self.train_pi_iters):
             # sample from buffer
-            if self.replay_buffer_type == "random":
-                transitions = self.replay_memory.sample(self.sample_size)
-            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
-                transitions, indices, weights = self.replay_memory.sample(self.sample_size,
-                                                                          beta=self.replay_buffer_beta, buffer_type=self.replay_buffer_type)
-                weights = torch.tensor(weights, dtype=torch.float32, device=self.device)
-
+            transitions = self.replay_memory.sample(self.sample_size)
             batch = Transition(*zip(*transitions))
             cur_state_batch = torch.cat(batch.state)
             cur_feat_batch = torch.cat(batch.feat)
@@ -226,47 +165,82 @@ class DPG:
             next_feat_batch = torch.cat(batch.next_feat)
             done_batch = torch.cat(batch.done).unsqueeze(1)
 
-            # value network (critic) update
+            #actions_pi, log_prob = self.ddpg.evaluate_policy(cur_state_batch, cur_feat_batch)
+            # self.entropy_coef = torch.exp(self.log_ent_coef.detach()) if self.sac_v2 else 0.001
+
+            # value network update
+
             new_action, next_log_prob = self.dpg.evaluate_policy_no_noise(next_state_batch, next_feat_batch)
             next_values = self.dpg.value_net(next_state_batch, next_feat_batch, new_action)
             target_value = (reward_batch + (self.gamma * (1 - done_batch) * next_values))
 
             predicted_value = self.dpg.value_net(cur_state_batch, cur_feat_batch, actions_batch)
 
-            if self.replay_buffer_type == "random":
-                value_loss = self.value_criterion(target_value.detach(), predicted_value)
-            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
-                td_error = predicted_value - target_value
-                value_loss = (td_error.pow(2) * weights).mean()
-                self.replay_memory.update_priorities(indices, np.abs(td_error.cpu().detach().numpy()))
+            value_loss = self.value_criterion(target_value.detach(), predicted_value)
 
             self.value_optimizer.zero_grad()
             value_loss.backward()
             self.value_optimizer.step()
+            # self.ddpg.policy_net.ActionModule.policy_noise.reset()
+            # self.ddpg.policy_net_target.ActionModule.policy_noise.reset()
             cl += value_loss.detach()
 
             for param in self.dpg.value_net.parameters():
                 if param.grad is not None:
                     val_grad += param.grad.sum()
 
-            # actor update
+            # if not self.sac_v2:
+            #     self.value_optimizer.zero_grad()
+            #     with torch.no_grad():
+            #         min_qf_val = torch.min(self.ddpg.soft_q_net1(cur_state_batch, cur_feat_batch, actions_pi),
+            #                                self.ddpg.soft_q_net2(cur_state_batch, cur_feat_batch, actions_pi))
+            #     predicted_value = self.ddpg.value_net(cur_state_batch, cur_feat_batch)
+            #     value_func_estimate = min_qf_val - (self.entropy_coef * log_prob)  # todo the temperature paramter
+            #     value_loss = 0.5 * self.value_criterion(predicted_value, value_func_estimate.detach())
+            #     value_loss.backward()
+            #     coeff_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.value_net.parameters(), self.grad_clip)
+            #     self.value_optimizer.step()
+            #     cl += value_loss.detach()
+            #
+            # # q network update
+            # self.soft_q_optimizer1.zero_grad()
+            # self.soft_q_optimizer2.zero_grad()
+            # with torch.no_grad():  # calculate the target q vals here.
+            #     if self.sac_v2:
+            #         new_action, next_log_prob = self.ddpg.evaluate_policy(next_state_batch, next_feat_batch)
+            #         next_q_values = torch.min(self.ddpg.target_q_net1(next_state_batch, next_feat_batch, new_action),
+            #                                   self.ddpg.target_q_net2(next_state_batch, next_feat_batch, new_action))
+            #         next_q_values = next_q_values - self.entropy_coef * next_log_prob
+            #         target_q_values = (reward_batch + (self.gamma * (1 - done_batch) * next_q_values))
+            #     else:
+            #         target_value = self.ddpg.value_net_target(next_state_batch, next_feat_batch)
+            #         target_q_values = (reward_batch + self.gamma * (1 - done_batch) * target_value)
+            #
+            # predicted_q_value1 = self.ddpg.soft_q_net1(cur_state_batch, cur_feat_batch, actions_batch)
+            # predicted_q_value2 = self.ddpg.soft_q_net2(cur_state_batch, cur_feat_batch, actions_batch)
+            # q_value_loss1 = 0.5 * self.soft_q_criterion1(predicted_q_value1, target_q_values)
+            # q_value_loss2 = 0.5 * self.soft_q_criterion2(predicted_q_value2, target_q_values)
+            # q_value_loss1.backward()
+            # q1_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.soft_q_net1.parameters(), self.grad_clip)
+            # self.soft_q_optimizer1.step()
+            # q_value_loss2.backward()
+            # q2_grad += torch.nn.utils.clip_grad_norm_(self.ddpg.soft_q_net2.parameters(), self.grad_clip)
+            # self.soft_q_optimizer2.step()
+
+            # actor update : next q values
             # freeze value networks save compute: ref: openai:
+
             for p in self.dpg.value_net.parameters():
                 p.requires_grad = False
             # for p in self.dpg.value_net_target.parameters():
             #     p.requires_grad = False
 
+            # min_qf_pi = torch.min(self.ddpg.soft_q_net1(cur_state_batch, cur_feat_batch, actions_pi),
+            #                       self.ddpg.soft_q_net2(cur_state_batch, cur_feat_batch, actions_pi))
+
             policy_action, _ = self.dpg.evaluate_policy_no_noise(cur_state_batch, cur_feat_batch)
             policy_loss = self.dpg.value_net(cur_state_batch, cur_feat_batch, policy_action)
-            # policy_loss = (-1 * policy_loss * weights).mean() + self.mu_penalty * action_penalty(policy_action)
-            if self.replay_buffer_type == "random":
-                policy_loss = (-1 * policy_loss).mean()
-            elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
-                policy_loss = (-1 * policy_loss * weights).mean()
-
-            policy_loss += self.mu_penalty * action_penalty(policy_action, lower_bound=-self.action_penalty_limit,
-                                                            upper_bound=self.action_penalty_limit,
-                                                            penalty_factor=self.action_penalty_coef)
+            policy_loss = (-1 * policy_loss).mean()
 
             self.policy_optimizer.zero_grad()
             policy_loss.backward()
@@ -281,9 +255,18 @@ class DPG:
             # for p in self.dpg.value_net_target.parameters():
             #     p.requires_grad = True
 
+            # entropy coeff update
+            # if self.sac_v2:
+            #     self.ent_coef_optimizer.zero_grad()
+            #     _, log_prob = self.ddpg.evaluate_policy(cur_state_batch, cur_feat_batch)
+            #     ent_coef_loss = -(self.log_ent_coef * (log_prob + self.target_entropy).detach()).mean()
+            #     ent_coef_loss.backward()
+            #     coeff_grad += torch.nn.utils.clip_grad_norm_([self.log_ent_coef], self.grad_clip)
+            #     self.ent_coef_optimizer.step()
+            #     cl += ent_coef_loss.detach()
+
             self.n_updates += 1
 
-            # Update target network
             # if self.n_updates % self.target_update_interval == 0:
             #     with torch.no_grad():
             #         print("################updated target")
@@ -295,6 +278,25 @@ class DPG:
             #                                        self.dpg.value_net_target.parameters()):
             #             target_param.data.mul_((1 - self.soft_tau))
             #             target_param.data.add_(self.soft_tau * param.data)
+            #
+            #         # if self.sac_v2:
+            #         #     for param, target_param in zip(self.ddpg.soft_q_net1.parameters(),
+            #         #                                    self.ddpg.target_q_net1.parameters()):
+            #         #         target_param.data.mul_((1 - self.soft_tau))
+            #         #         target_param.data.add_(self.soft_tau * param.data)
+            #         #     for param, target_param in zip(self.ddpg.soft_q_net2.parameters(),
+            #         #                                    self.ddpg.target_q_net2.parameters()):
+            #         #         target_param.data.mul_((1 - self.soft_tau))
+            #         #         target_param.data.add_(self.soft_tau * param.data)
+            #         # else:
+            #         #     for param, target_param in zip(self.ddpg.value_net.parameters(),
+            #         #                                    self.ddpg.value_net_target.parameters()):
+            #         #         target_param.data.mul_((1 - self.soft_tau))
+            #         #         target_param.data.add_(self.soft_tau * param.data)
+
+            # pl += policy_loss.detach()
+            # ql1 += q_value_loss1.detach()
+            # ql2 += q_value_loss2.detach()
 
         self.model_logs[0] = cl  # value loss or coeff loss
         self.model_logs[1] = pl
@@ -319,6 +321,7 @@ class DPG:
         self.dpg.policy_net.ActionModule.noise_std = self.dpg.policy_net.ActionModule.noise_std / 10
         # self.dpg.policy_net_target.ActionModule.noise_std = self.dpg.policy_net_target.ActionModule.noise_std / 10
 
+
     def run(self, args, patients, env_ids, seed):
         MAX_INTERACTIONS = 4000 if args.debug == 1 else 800000
         LR_DECAY_INTERACTIONS = 2000 if args.debug == 1 else 600000
@@ -338,7 +341,7 @@ class DPG:
         testing_agents = [Worker(testing_args, 'testing', patients, env_ids, i + 5000, i + 5000, self.device) for i in
                           range(self.n_testing_workers)]
 
-        # DPG learning
+        # sac learning
         for rollout in range(0, 30000):  # steps * n_workers * epochs
             print("rollout: ", rollout)
             t1 = time.time()
@@ -348,24 +351,6 @@ class DPG:
             t2 = time.time()
             self.dpg.save(rollout)
             self.dpg.policy_net.ActionModule.policy_noise.reset()
-
-            # if rollout >= 80 and rollout % 40 == 0:
-            # if rollout == 80:
-            #     self.ddpg.policy_net.ActionModule.policy_noise.sigma = self.ddpg.policy_net.ActionModule.policy_noise.sigma / 2
-            #     self.ddpg.policy_net.ActionModule.policy_noise.reset()
-            #     print("Reduced noise --> updated noise sigma is {}".format(self.ddpg.policy_net.ActionModule.policy_noise.sigma))
-
-            # if rollout == 40:
-            #     self.ddpg.policy_net.ActionModule.policy_noise.sigma = 2e-1
-            #     self.ddpg.policy_net.ActionModule.policy_noise.reset()
-            #
-            # if rollout == 150:
-            #     self.ddpg.policy_net.ActionModule.policy_noise.sigma = 1e-1
-            #     self.ddpg.policy_net.ActionModule.policy_noise.reset()
-            #
-            # if rollout == 185:
-            #     self.ddpg.policy_net.ActionModule.policy_noise.sigma = 5e-2
-            #     self.ddpg.policy_net.ActionModule.policy_noise.reset()
 
             # testing
             t5 = time.time()
@@ -406,12 +391,3 @@ class DPG:
                     res = validation_agents[i].rollout(self.dpg, self.replay_memory)
                 print('Algo RAN Successfully')
                 exit()
-
-
-def action_penalty(action, lower_bound=-1.0, upper_bound=1.0, penalty_factor=0.1):
-    # action = torch.tensor(action, dtype=torch.float32)
-    mu = torch.atanh(action)
-    high_penalty = torch.clamp(mu - upper_bound, min=0.0)
-    low_penalty = torch.clamp(lower_bound - mu, min=0.0)
-    total_penalty = high_penalty + low_penalty
-    return penalty_factor * torch.mean(total_penalty ** 2)
