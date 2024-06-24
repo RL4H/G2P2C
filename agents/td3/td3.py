@@ -13,7 +13,7 @@ from agents.td3.worker import Worker
 from agents.td3.models import ActorCritic
 from collections import namedtuple, deque
 
-# python run_RL_agent.py --agent td3 --folder_id TEST_TD3_TEMPORAL_PERBuffer/per_rank/OUNoise_Sigma_5e-1/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --replay_buffer_type per_rank --seed 1 --debug 0
+# python run_RL_agent.py --agent td3 --folder_id TEMPORAL_PERBuffer/TD3/NormDist_Sigma_2e-1/TD30_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-3 --vf_lr 1e-3 --soft_tau 0.005 --noise_model normal_dist --noise_std 2e-1  --mu_penalty 1 --replay_buffer_type per_rank --replay_buffer_temporal_decay 0.99 --seed 1 --debug 0
 
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
