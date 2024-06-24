@@ -13,7 +13,7 @@ from agents.td3.worker import Worker
 from agents.td3.models import ActorCritic
 from collections import namedtuple, deque
 
-# python run_RL_agent.py --agent td3 --folder_id TD3_TestRun/TD32_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --seed 3 --debug 0
+# python run_RL_agent.py --agent td3 --folder_id TEST_TD3_TEMPORAL_PERBuffer/per_rank/OUNoise_Sigma_5e-1/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --replay_buffer_type per_rank --seed 1 --debug 0
 
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
@@ -37,7 +37,7 @@ class ReplayMemory(object):
 
 
 class PrioritisedExperienceReplayMemory(object):
-    def __init__(self, capacity, alpha=0.6, temporal_decay=1):
+    def __init__(self, capacity, alpha=0.6, temporal_decay = 1):
         self.memory = deque([], maxlen=capacity)
         self.capacity = capacity
         self.priorities = np.zeros((capacity,), dtype=np.float32)
@@ -149,6 +149,8 @@ class TD3:
         self.replay_buffer_type = args.replay_buffer_type
         self.replay_buffer_alpha = args.replay_buffer_alpha
         self.replay_buffer_beta = args.replay_buffer_beta
+        self.replay_buffer_temporal_decay = args.replay_buffer_temporal_decay
+
 
         self.weight_decay = 0
 
@@ -182,7 +184,7 @@ class TD3:
             self.replay_memory = ReplayMemory(self.replay_buffer_size)
         elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
             self.replay_memory = PrioritisedExperienceReplayMemory(self.replay_buffer_size,
-                                                                   alpha=self.replay_buffer_alpha)
+                                                                   alpha=self.replay_buffer_alpha, temporal_decay=self.replay_buffer_temporal_decay)
         else:
             print("Incorrect replay buffer type")
 

@@ -13,18 +13,7 @@ from agents.dpg.worker import Worker
 from agents.dpg.models import ActorCritic
 from collections import namedtuple, deque
 
-# python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.001 --noise_model normal_dist --seed 1 --debug 1
-
-# python run_RL_agent.py --agent ddpg --folder_id LR/1e-5/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-5 --vf_lr 1e-5 --seed 1 --debug 0
-# python run_RL_agent.py --agent ddpg --folder_id preNCI_testrun/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-4 --noise_model ou_noise --noise_std 1e-1  --seed 1 --debug 0
-# python run_RL_agent.py --agent ddpg --folder_id PriorityExperienceReplay/DDPG/DDPG3_7 --patient_id 3 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-2  --seed 1 --de
-# bug 0
-
-# python run_RL_agent.py --agent ddpg --folder_id Experiment2_NoiseModel/Model_8/Limit_1/DecayingSigma_5e-1_rev1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --seed 3 --debug 0
-
-# python run_RL_agent.py --agent ddpg --folder_id DDPG_LayerNorm_PostActivation_WithPenalty/OUNoise_Sigma_5e-1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --seed 3 --debug 0
-
-# python run_RL_agent.py --agent ddpg --folder_id DDPG_PERBuffer/per_rank/OUNoise_Sigma_5e-1/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --replay_buffer_type per_rank --seed 1 --debug 0
+# python run_RL_agent.py --agent dpg --folder_id TEST_DPG_TEMPORAL_PERBuffer/per_rank/OUNoise_Sigma_5e-1/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --replay_buffer_type per_rank --seed 1 --debug 0
 
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
@@ -48,12 +37,15 @@ class ReplayMemory(object):
 
 
 class PrioritisedExperienceReplayMemory(object):
-    def __init__(self, capacity, alpha=0.6):
+    def __init__(self, capacity, alpha=0.6, temporal_decay = 1):
         self.memory = deque([], maxlen=capacity)
         self.capacity = capacity
         self.priorities = np.zeros((capacity,), dtype=np.float32)
         self.position = 0
         self.alpha = alpha
+        self.temporal_decay = temporal_decay  # Decay factor for temporal weighting
+        self.timestamps = np.zeros((capacity,), dtype=np.float32)  # Track when each sample was added
+        self.current_time = 0  # Incremental time counter to simulate timestamps
 
     def push(self, *args):
         '''Save a transition with a maximum priority initially'''
@@ -63,13 +55,17 @@ class PrioritisedExperienceReplayMemory(object):
         else:
             self.memory[self.position] = Transition(*args)
         self.priorities[self.position] = max_priority if max_priority > 0 else 1.0
+        self.timestamps[self.position] = self.current_time  # Set the timestamp
         self.position = (self.position + 1) % self.capacity
+        self.current_time += 1  # Increment the time counter
 
-    def sample(self, batch_size, beta=0.4, buffer_type = "per_proportional"):
+    def sample(self, batch_size, beta=0.4, buffer_type="per_proportional"):
         if len(self.memory) == self.capacity:
             priorities = self.priorities
+            timestamps = self.timestamps
         else:
             priorities = self.priorities[:self.position]
+            timestamps = self.timestamps[:self.position]
 
         # Rank the priorities
         ranked_indices = np.argsort(priorities)
@@ -77,23 +73,26 @@ class PrioritisedExperienceReplayMemory(object):
         ranks[ranked_indices] = np.arange(len(priorities))
 
         if buffer_type == "per_proportional":
-            probabilities = priorities ** self.alpha # Temporal difference based probability
+            probabilities = priorities ** self.alpha  # Temporal difference based probability
         elif buffer_type == "per_rank":
             probabilities = (1 / (ranks + 1)) ** self.alpha  # Rank based probability
 
-        sum_probabilities = probabilities.sum()
+        # Apply temporal decay factor to the probabilities
+        # decay_weights = np.exp(-self.temporal_decay * (self.current_time - timestamps))
+        decay_weights = self.temporal_decay ** (self.current_time - timestamps)
+        adjusted_probabilities = probabilities * decay_weights
+
+        # Normalize the probabilities
+        sum_probabilities = adjusted_probabilities.sum()
         if sum_probabilities == 0:
-            probabilities = np.ones_like(probabilities) / len(probabilities)
+            probabilities = np.ones_like(adjusted_probabilities) / len(adjusted_probabilities)
         else:
-            probabilities /= sum_probabilities
+            probabilities = adjusted_probabilities / sum_probabilities
 
         if np.isnan(probabilities).any():
             print('Nan probabilities found')
             print(probabilities)
             probabilities = np.ones_like(probabilities) / len(probabilities)
-
-        else:
-            probabilities /= probabilities.sum()
 
         indices = np.random.choice(len(self.memory), batch_size, p=probabilities)
         samples = [self.memory[idx] for idx in indices]
@@ -150,6 +149,8 @@ class DPG:
         self.replay_buffer_type = args.replay_buffer_type
         self.replay_buffer_alpha = args.replay_buffer_alpha
         self.replay_buffer_beta = args.replay_buffer_beta
+        self.replay_buffer_temporal_decay = args.replay_buffer_temporal_decay
+
 
         self.weight_decay = 0.01
 
@@ -174,7 +175,7 @@ class DPG:
             self.replay_memory = ReplayMemory(self.replay_buffer_size)
         elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
             self.replay_memory = PrioritisedExperienceReplayMemory(self.replay_buffer_size,
-                                                                   alpha=self.replay_buffer_alpha)
+                                                                   alpha=self.replay_buffer_alpha, temporal_decay=self.replay_buffer_temporal_decay)
         else:
             print("Incorrect replay buffer type")
 

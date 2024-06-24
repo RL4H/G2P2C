@@ -13,17 +13,6 @@ from agents.ddpg.worker import Worker
 from agents.ddpg.models import ActorCritic
 from collections import namedtuple, deque
 
-# python run_RL_agent.py --agent ddpg --folder_id test --patient_id 0 --return_type average --action_type exponential --device cuda --noise_std 0.001 --noise_model normal_dist --seed 1 --debug 1
-
-# python run_RL_agent.py --agent ddpg --folder_id LR/1e-5/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-5 --vf_lr 1e-5 --seed 1 --debug 0
-# python run_RL_agent.py --agent ddpg --folder_id preNCI_testrun/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-4 --noise_model ou_noise --noise_std 1e-1  --seed 1 --debug 0
-# python run_RL_agent.py --agent ddpg --folder_id PriorityExperienceReplay/DDPG/DDPG3_7 --patient_id 3 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-2  --seed 1 --de
-# bug 0
-
-# python run_RL_agent.py --agent ddpg --folder_id Experiment2_NoiseModel/Model_8/Limit_1/DecayingSigma_5e-1_rev1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --seed 3 --debug 0
-
-# python run_RL_agent.py --agent ddpg --folder_id DDPG_LayerNorm_PostActivation_WithPenalty/OUNoise_Sigma_5e-1/DDPG2_3 --patient_id 2 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --seed 3 --debug 0
-
 # python run_RL_agent.py --agent ddpg --folder_id DDPG_PERBuffer/per_rank/OUNoise_Sigma_5e-1/DDPG0_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-4 --vf_lr 1e-3 --soft_tau 0.001 --noise_model ou_noise --noise_std 5e-1  --mu_penalty 1 --replay_buffer_type per_rank --seed 1 --debug 0
 
 Transition = namedtuple('Transition',
@@ -161,6 +150,7 @@ class DDPG:
         self.replay_buffer_type = args.replay_buffer_type
         self.replay_buffer_alpha = args.replay_buffer_alpha
         self.replay_buffer_beta = args.replay_buffer_beta
+        self.replay_buffer_temporal_decay = args.replay_buffer_temporal_decay
 
         self.weight_decay = 0.01
 
@@ -185,7 +175,7 @@ class DDPG:
             self.replay_memory = ReplayMemory(self.replay_buffer_size)
         elif self.replay_buffer_type == "per_proportional" or self.replay_buffer_type == "per_rank":
             self.replay_memory = PrioritisedExperienceReplayMemory(self.replay_buffer_size,
-                                                                   alpha=self.replay_buffer_alpha)
+                                                                   alpha=self.replay_buffer_alpha, temporal_decay=self.replay_buffer_temporal_decay)
         else:
             print("Incorrect replay buffer type")
 

@@ -144,6 +144,8 @@ class Options:
         self.parser.add_argument('--replay_buffer_type', type=str, default="random", help='type of replay buffer')
         self.parser.add_argument('--replay_buffer_alpha', type=float, default=0.6, help='Replay buffer alpha')
         self.parser.add_argument('--replay_buffer_beta', type=float, default=0.4, help='Replay buffer beta')
+        self.parser.add_argument('--replay_buffer_temporal_decay', type=float, default=1, help='Replay buffer discount factor')
+
 
 
         # self.parser.add_argument('--pi_lr', type=float, default=1e-4 * 3, help='Policy learning rate')
