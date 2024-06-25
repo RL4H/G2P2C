@@ -8,8 +8,8 @@
 #PBS -l ncpus=12
 #PBS -M david.timms@anu.edu.au
 #PBS -l storage=scratch/sj53
-#PBS -o out_ DPG6.txt
-#PBS -e err_ DPG6.txt
+#PBS -o out_dpg6.txt
+#PBS -e err_dpg6.txt
 #PBS -l software=python
 module load python3/3.9.2
 module load pytorch/1.9.0
