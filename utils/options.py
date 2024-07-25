@@ -138,13 +138,17 @@ class Options:
         self.parser.add_argument('--soft_tau', type=float, default=0.005, help='Tau for soft update')
 
         self.parser.add_argument('--mu_penalty', type=int, default=1, help='Penalty applied to mu during policy optimisation -> 1 for penalty applied, 0 for no penalty')
-        self.parser.add_argument('--action_penalty_limit', type=float, default=1, help='Limit of action during policy optimisation')
-        self.parser.add_argument('--action_penalty_coef', type=float, default=0.1, help='Policy penalty term coefficient')
+        self.parser.add_argument('--action_penalty_limit', type=float, default=0, help='Limit of action during policy optimisation')
+        self.parser.add_argument('--action_penalty_coef', type=float, default=0.01, help='Policy penalty term coefficient')
 
         self.parser.add_argument('--replay_buffer_type', type=str, default="random", help='type of replay buffer')
         self.parser.add_argument('--replay_buffer_alpha', type=float, default=0.6, help='Replay buffer alpha')
         self.parser.add_argument('--replay_buffer_beta', type=float, default=0.4, help='Replay buffer beta')
         self.parser.add_argument('--replay_buffer_temporal_decay', type=float, default=1, help='Replay buffer discount factor')
+
+        self.parser.add_argument('--target_action_std', type=float, default=0.2, help='Target action noise level for TD3')
+        self.parser.add_argument('--target_action_lim', type=float, default=0.5, help='Target action noise limit for TD3')
+
 
 
 

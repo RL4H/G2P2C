@@ -410,9 +410,9 @@ class DPG:
 
 
 def action_penalty(action, lower_bound=-1.0, upper_bound=1.0, penalty_factor=0.1):
-    # action = torch.tensor(action, dtype=torch.float32)
     mu = torch.atanh(action)
     high_penalty = torch.clamp(mu - upper_bound, min=0.0)
     low_penalty = torch.clamp(lower_bound - mu, min=0.0)
     total_penalty = high_penalty + low_penalty
-    return penalty_factor * torch.mean(total_penalty ** 2)
+    # return penalty_factor * torch.mean(total_penalty ** 2)
+    return penalty_factor * torch.mean(mu ** 2)

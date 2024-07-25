@@ -102,6 +102,9 @@ class ActionModule(nn.Module):
         self.noise_std = args.noise_std
         self.policy_noise = ExploratoryNoise(0, self.noise_std, noise_model=self.noise_model)
         self.noise_application = args.noise_application
+        self.target_action_std = args.target_action_std
+        self.target_action_lim = args.target_action_lim
+
 
 
 
@@ -167,8 +170,8 @@ class ActionModule(nn.Module):
             # action_with_noise = torch.tanh(mu) + self.policy_noise.get_noise()
             # action = torch.clamp(action_with_noise,min=action_no_noise*0.99, max=action_no_noise*1.01)
 
-            policy_noise = 0.2 # Value from Fujimoto et al (2018) paper
-            noise_clip = 0.5 # Value from Fujimoto et al (2018) paper
+            policy_noise = self.target_action_std #0.2 # Value from Fujimoto et al (2018) paper
+            noise_clip = self.target_action_lim #0.5 # Value from Fujimoto et al (2018) paper
 
             noise = (torch.randn_like(mu) * policy_noise).clamp(-noise_clip, noise_clip)
             action = torch.tanh(mu + noise)
