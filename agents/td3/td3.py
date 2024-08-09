@@ -15,6 +15,8 @@ from collections import namedtuple, deque
 
 # python run_RL_agent.py --agent td3 --folder_id TEMPORAL_PERBuffer/TD3/NormDist_Sigma_2e-1/TD30_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-3 --vf_lr 1e-3 --soft_tau 0.005 --noise_model normal_dist --noise_std 2e-1  --mu_penalty 1 --replay_buffer_type per_rank --replay_buffer_temporal_decay 0.99 --seed 1 --debug 0
 
+#python run_RL_agent.py --agent td3 --folder_id SJ53Experiments/NoCutOff/NoiseApplication/TD3/Model2/NormDist/sigma_2e-1/TD30_1 --patient_id 0 --return_type average --action_type exponential --device cuda --pi_lr 1e-3 --vf_lr 1e-3 --soft_tau 0.005 --noise_application 2 --noise_model normal_dist --mu_penalty 1 --noise_std 2e-1 --action_penalty_limit 1.0 --action_penalty_coef 1e-2 --seed 1 --debug 0
+
 Transition = namedtuple('Transition',
                         ('state', 'feat', 'action', 'reward', 'next_state', 'next_feat', 'done'))
 
@@ -460,3 +462,5 @@ def action_penalty(action, lower_bound=-1.0, upper_bound=1.0, penalty_factor=0.1
     total_penalty = high_penalty + low_penalty
     # return penalty_factor * torch.mean(total_penalty ** 2)
     return penalty_factor * torch.mean(mu ** 2)
+    # return penalty_factor * torch.mean(torch.abs(mu))
+
