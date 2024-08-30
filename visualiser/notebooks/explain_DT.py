@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 cohorts = ['adult', 'adolescent', 'child']
 seeds = ['1', '2', '3']
 subjects = ['0', '2', '6']  # , '1', '2', '3', '4', '5', '6', '7', '8', '9']
+# subjects = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
 
 cohort = 'adolescent'
 
@@ -30,7 +32,9 @@ def get_corr(cohort, sub):
         worker_id = int(trial + 6000)
         for seed in seeds:
             # PATH1=MAIN_PATH + '/results/'+cohort+'/PPO/P'+sub+'_'+seed+'/testing/data/logs_worker_'+str(worker_id)+'.csv'
-            PATH1 = MAIN_PATH + '/results/EU59 Experiments/PenaltyTermSensitivity/TD3/NoCutOff/coefficient1e-2' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+            # PATH1 = MAIN_PATH + '/results/Best_Models/Best_DPG' + '/DPG' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+            PATH1 = MAIN_PATH + '/results/Best_Models/Best_DDPG' + '/DDPG' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+            # PATH1 = MAIN_PATH + '/results/Best_Models/Best_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
 
             data = pd.read_csv(PATH1)
             for i in range(12, data.shape[0]):
@@ -79,7 +83,7 @@ for sub in subjects:
     df = get_corr(cohort, sub)
     df_combined = pd.concat([df_combined, df], ignore_index=True)
 
-df_combined.to_csv("td3_combined.csv")
+df_combined.to_csv("ddpg_combined_allPatients.csv")
 
 #==== Decompose table for easier plotting
 columns_retain = ["trial_id", "seed", "subject"]
@@ -89,5 +93,5 @@ columns_decompose = [header for header in df_combined.columns
                      and header not in columns_drop]
 
 df_decompose = decompose_data(df_combined, columns_retain, columns_decompose)
-df_decompose.to_csv("td3_decomposed.csv")
+df_decompose.to_csv("ddpg_decomposed_allPatients.csv")
 

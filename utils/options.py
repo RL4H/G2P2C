@@ -12,7 +12,7 @@ class Options:
         self.parser.add_argument('--agent', type=str, default='ppo', help='agent used for the experiment.')
         self.parser.add_argument('--restart', type=str, default='1', help='')
         self.parser.add_argument('--m', type=str, default='', help='message about the experiment')
-        self.parser.add_argument('--device', type=str, default='cpu', help='give device name')
+        self.parser.add_argument('--device', type=str, default='cuda', help='cpu | cuda | give device name')
         self.parser.add_argument('--verbose', type=bool, default=True, help='')
         self.parser.add_argument('--seed', type=int, default=0, help='')
         self.parser.add_argument('--debug', type=int, default=0, help='if debug ON => 1')
@@ -85,8 +85,8 @@ class Options:
         self.parser.add_argument('--n_vf_epochs', type=int, default=80, help='')
         self.parser.add_argument('--n_pi_epochs', type=int, default=80, help='')
         self.parser.add_argument('--target_kl', type=float, default=0.05, help='# (Usually small, 0.01 or 0.05.)')
-        self.parser.add_argument('--pi_lr', type=float, default=1e-4, help='')
-        self.parser.add_argument('--vf_lr', type=float, default=1e-4, help='')
+        self.parser.add_argument('--pi_lr', type=float, default=1e-3, help='')
+        self.parser.add_argument('--vf_lr', type=float, default=1e-3, help='')
         self.parser.add_argument('--batch_size', type=int, default=64, help='')
         self.parser.add_argument('--n_training_workers', type=int, default=20, help='')
         self.parser.add_argument('--n_testing_workers', type=int, default=5, help='')
@@ -94,7 +94,7 @@ class Options:
         self.parser.add_argument('--grad_clip', type=float, default=20, help='')
         self.parser.add_argument('--normalize_reward', type=bool, default=False, help='')
         self.parser.add_argument('--shuffle_rollout', type=bool, default=False, help='')
-        self.parser.add_argument('--return_type', type=str, default='discount', help='discount | average')
+        self.parser.add_argument('--return_type', type=str, default='average', help='discount | average')
 
         # auxiliary model learning
         self.parser.add_argument('--aux_mode', type=str, default='dual', help='off, vf_only, pi_only, dual')
@@ -133,13 +133,13 @@ class Options:
                                  help='Noise model for applying exploratory noise to policy')
         self.parser.add_argument('--noise_application', type=int, default=1,
                                  help='Noise application method for policy exploration')
-        self.parser.add_argument('--noise_std', type=float, default=0.01,
+        self.parser.add_argument('--noise_std', type=float, default=0.2,
                                  help='Standard deviation for exploratory noise')
         self.parser.add_argument('--soft_tau', type=float, default=0.005, help='Tau for soft update')
 
         self.parser.add_argument('--mu_penalty', type=int, default=1, help='Penalty applied to mu during policy optimisation -> 1 for penalty applied, 0 for no penalty')
         self.parser.add_argument('--action_penalty_limit', type=float, default=0, help='Limit of action during policy optimisation')
-        self.parser.add_argument('--action_penalty_coef', type=float, default=0.01, help='Policy penalty term coefficient')
+        self.parser.add_argument('--action_penalty_coef', type=float, default=0.1, help='Policy penalty term coefficient')
 
         self.parser.add_argument('--replay_buffer_type', type=str, default="random", help='type of replay buffer')
         self.parser.add_argument('--replay_buffer_alpha', type=float, default=0.6, help='Replay buffer alpha')
