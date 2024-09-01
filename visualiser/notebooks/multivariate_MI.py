@@ -15,14 +15,14 @@ from idtxl.visualise_graph import plot_network
 import matplotlib.pyplot as plt
 
 cohorts = ['adult', 'adolescent', 'child']
-seeds = ['1', '2', '3']
+seeds = ['1']#['1', '2', '3']
 subjects = ['6']  # , '1', '2', '3', '4', '5', '6', '7', '8', '9']
 # subjects = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
 cohort = 'adolescent'
 
-n_trials = 5  # 500
+n_trials = 50  # 500
 
 
 def combine_data(cohort, sub):

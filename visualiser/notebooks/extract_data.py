@@ -16,7 +16,7 @@ subjects = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 cohort = 'adolescent'
 
-n_trials = 10  # 500
+n_trials = 500  # 500
 
 
 def get_corr(cohort, sub):
@@ -70,5 +70,5 @@ for sub in subjects:
     df = get_corr(cohort, sub)
     df_combined = pd.concat([df_combined, df], ignore_index=True)
 
-df_combined.to_csv("td3_combined_allpatients_rev1.csv")
+df_combined.to_csv("td3_combined_allpatients_rev2.csv")
 
