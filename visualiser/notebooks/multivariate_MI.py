@@ -15,14 +15,16 @@ from idtxl.visualise_graph import plot_network
 import matplotlib.pyplot as plt
 
 cohorts = ['adult', 'adolescent', 'child']
-seeds = ['1']#['1', '2', '3']
+seeds = ['1', '2', '3']
+# seeds = ['3']
+
 subjects = ['6']  # , '1', '2', '3', '4', '5', '6', '7', '8', '9']
 # subjects = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
 cohort = 'adolescent'
 
-n_trials = 50  # 500
+n_trials = 5  # 500
 
 
 def combine_data(cohort, sub):
@@ -38,10 +40,10 @@ def combine_data(cohort, sub):
     for trial in range(0, n_trials):
         worker_id = int(trial + 6000)
         for seed in seeds:
-            PATH1 = MAIN_PATH + '/results/' + cohort + '/PPO/P' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+            # PATH1 = MAIN_PATH + '/results/' + cohort + '/PPO/P' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
             # PATH1 = MAIN_PATH + '/results/Best_Models/Best_DPG' + '/DPG' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
             # PATH1 = MAIN_PATH + '/results/Best_Models/Best_DDPG' + '/DDPG' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
-            # PATH1 = MAIN_PATH + '/results/Best_Models/Best_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+            PATH1 = MAIN_PATH + '/results/Best_Models/Best_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
 
             data = pd.read_csv(PATH1)
             for i in range(12, data.shape[0]):
