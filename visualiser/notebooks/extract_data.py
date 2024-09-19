@@ -23,7 +23,7 @@ def get_corr(cohort, sub):
     print("="*100)
     print("Starting for patient {}".format(sub))
 
-    d = []
+
     columns = ['x12', 'x11', 'x10', 'x9', 'x8', 'x7', 'x6', 'x5', 'x4', 'x3', 'x2', 'x1', 'i12', 'i11', 'i10', 'i9',
                'i8', 'i7', 'i6', 'i5', 'i4', 'i3', 'i2', 'i1', 'y']
     df_combined = pd.DataFrame()
@@ -34,9 +34,12 @@ def get_corr(cohort, sub):
             # PATH1=MAIN_PATH + '/results/'+cohort+'/PPO/P'+sub+'_'+seed+'/testing/data/logs_worker_'+str(worker_id)+'.csv'
             # PATH1 = MAIN_PATH + '/results/Best_Models/Best_DPG' + '/DPG' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
             # PATH1 = MAIN_PATH + '/results/Best_Models/Best_DDPG' + '/DDPG' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
-            PATH1 = MAIN_PATH + '/results/Best_Models/Best_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+            # PATH1 = MAIN_PATH + '/results/Best_Models/Best_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+            PATH1 = MAIN_PATH + '/results/Best_Models/Best_Final_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+
 
             data = pd.read_csv(PATH1)
+            d = []
             for i in range(12, data.shape[0]):
                 d.append([data.iloc[i - 12]['cgm'], data.iloc[i - 11]['cgm'], data.iloc[i - 10]['cgm'],
                           data.iloc[i - 9]['cgm'], data.iloc[i - 8]['cgm'], data.iloc[i - 7]['cgm'],
@@ -70,5 +73,5 @@ for sub in subjects:
     df = get_corr(cohort, sub)
     df_combined = pd.concat([df_combined, df], ignore_index=True)
 
-df_combined.to_csv("td3_combined_allpatients_rev2.csv")
+df_combined.to_csv("td3_combined_allpatients_rev3A.csv")
 

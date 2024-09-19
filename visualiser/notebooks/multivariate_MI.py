@@ -43,7 +43,9 @@ def combine_data(cohort, sub):
             # PATH1 = MAIN_PATH + '/results/' + cohort + '/PPO/P' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
             # PATH1 = MAIN_PATH + '/results/Best_Models/Best_DPG' + '/DPG' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
             # PATH1 = MAIN_PATH + '/results/Best_Models/Best_DDPG' + '/DDPG' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
-            PATH1 = MAIN_PATH + '/results/Best_Models/Best_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+            # PATH1 = MAIN_PATH + '/results/Best_Models/Best_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv' # Random buffer TD3 only
+            PATH1 = MAIN_PATH + '/results/Best_Models/Best_Final_TD3' + '/TD3' + sub + '_' + seed + '/testing/data/logs_worker_' + str(worker_id) + '.csv'
+
 
             data = pd.read_csv(PATH1)
             for i in range(12, data.shape[0]):

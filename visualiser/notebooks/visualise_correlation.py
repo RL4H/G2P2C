@@ -22,7 +22,7 @@ df_ppo = pd.read_csv('ppo_decomposed_allPatients.csv')
 # df_ppo = pd.read_csv('ppo_decomposed.csv')
 df_ppo['algorithm'] = 'PPO'
 
-df_td3 = pd.read_csv('td3_decomposed_allPatients.csv')
+df_td3 = pd.read_csv('td3_decomposed_allPatients_rev1.csv')
 # df_td3 = pd.read_csv('td3_decomposed.csv')
 df_td3['algorithm'] = 'TD3'
 
