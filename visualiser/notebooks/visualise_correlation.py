@@ -52,8 +52,8 @@ for patient in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]:
     plt.title(f'Patient {patient}')
     plt.xlabel('Glucose')
     plt.ylabel('Correlation')
-    plt.xticks(ticks=plt.gca().get_xticks(), labels=new_labels)  # Change x-axis labels
-    plt.gca().invert_xaxis()  # Reverse the x-axis
+    plt.xticks(ticks=plt.gca().get_xticks(), labels=new_labels)
+    plt.gca().invert_xaxis()
 
     plt.show()
 
@@ -64,8 +64,8 @@ for algo in ['PPO', 'TD3', 'DDPG', 'DPG']:
     plt.title(f'{algo}')
     plt.xlabel('Glucose')
     plt.ylabel('Correlation')
-    plt.xticks(ticks=plt.gca().get_xticks(), labels=new_labels)  # Change x-axis labels
-    plt.gca().invert_xaxis()  # Reverse the x-axis
+    plt.xticks(ticks=plt.gca().get_xticks(), labels=new_labels)
+    plt.gca().invert_xaxis()
 
     plt.show()
 
@@ -77,8 +77,8 @@ for patient in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]:
     plt.title(f'Patient {patient}')
     plt.xlabel('Insulin')
     plt.ylabel('Correlation')
-    plt.xticks(ticks=plt.gca().get_xticks(), labels=new_labels)  # Change x-axis labels
-    plt.gca().invert_xaxis()  # Reverse the x-axis
+    plt.xticks(ticks=plt.gca().get_xticks(), labels=new_labels)
+    plt.gca().invert_xaxis()
 
     plt.show()
 
@@ -89,7 +89,7 @@ for algo in ['PPO', 'TD3', 'DDPG', 'DPG']:
     plt.title(f'{algo}')
     plt.xlabel('Insulin')
     plt.ylabel('Correlation')
-    plt.xticks(ticks=plt.gca().get_xticks(), labels=new_labels)  # Change x-axis labels
-    plt.gca().invert_xaxis()  # Reverse the x-axis
+    plt.xticks(ticks=plt.gca().get_xticks(), labels=new_labels)
+    plt.gca().invert_xaxis()
 
     plt.show()
