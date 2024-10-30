@@ -108,7 +108,44 @@ def set_agent_parameters(args):
         dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
         copy_folder(MAIN_PATH + '/agents/ppo_aux_plan', dst)
 
-    else:
+    elif args.agent == 'ddpg':
+        from agents.ddpg.ddpg import DDPG
+        from agents.ddpg.parameters import set_args
+        args.aux_mode = 'off'
+        args.use_planning = 'no'
+        args = set_args(args)
+        args = setup_folders(args)
+        weights = MAIN_PATH+'/results/ppo_lstm_12_testing/checkpoints/'
+        #agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
+        agent = DDPG(args, device, False, '', '')
+        dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
+        copy_folder(MAIN_PATH + '/agents/ddpg', dst)
+
+    elif args.agent == 'dpg':
+        from agents.dpg.dpg import DPG
+        from agents.dpg.parameters import set_args
+        args.aux_mode = 'off'
+        args.use_planning = 'no'
+        args = set_args(args)
+        args = setup_folders(args)
+        weights = MAIN_PATH+'/results/ppo_lstm_12_testing/checkpoints/'
+        #agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
+        agent = DPG(args, device, False, '', '')
+        dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
+        copy_folder(MAIN_PATH + '/agents/dpg', dst)
+
+    elif args.agent == 'td3':
+        from agents.td3.td3 import TD3
+        from agents.td3.parameters import set_args
+        args.aux_mode = 'off'
+        args.use_planning = 'no'
+        args = set_args(args)
+        args = setup_folders(args)
+        weights = MAIN_PATH + '/results/ppo_lstm_12_testing/checkpoints/'
+        # agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
+        agent = TD3(args, device, False, '', '')
+        dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
+        copy_folder(MAIN_PATH + '/agents/td3', dst)
         print('Please select an agent for the experiment. Hint: a2c, a3c, sac, ppo, ppo_v2')
     return args, agent, device
 
