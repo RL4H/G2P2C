@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def decompose_data(df, data_retain, data_decompose):
+def decompose_data(df, columns_retain, columns_decompose):
     df_decompose = pd.DataFrame(columns=['type', 'value'] + columns_retain)
 
     for index, row in df.iterrows():
