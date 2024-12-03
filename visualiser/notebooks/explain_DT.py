@@ -66,7 +66,7 @@ def get_corr(cohort, sub):
 
     return df_combined
 
-def decompose_data(df, columns_retain, data_decompose):
+def decompose_data(df, columns_retain, columns_decompose):
     df_decompose = pd.DataFrame(columns=['type', 'value'] + columns_retain)
 
     for index, row in df.iterrows():
