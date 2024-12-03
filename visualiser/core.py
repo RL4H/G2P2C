@@ -275,9 +275,9 @@ def plot_training_action_summary(experiment, horizon):
     #ax2.yscale('log', nonposy='clip')
     ax3.hist(cgm, bins=20, color='c')
 
-    ax.set_title('Agent Action Mean (tanh)')
+    ax.set_title(r'Network Output ($\mu$)')
     ax1.set_title('Agent Action Sigma')
-    ax1_1.set_title('Agent Action (-1, +1)')
+    ax1_1.set_title('Agent Action (0,5)')
     ax2.set_title('Agent Training - Final Pump Action (0 - action_scale Units)')
     ax3.set_title('Agent Training - Gluocse Distribution (40 - 600 mg/dL)')
     fig.suptitle('Agent Summary Last 100 actions', fontsize=16)

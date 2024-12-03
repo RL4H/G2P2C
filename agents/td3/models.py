@@ -265,12 +265,17 @@ class ActorCritic(nn.Module):
         self.is_testing_worker = False
         # self.sac_v2 = args.sac_v2
         self.policy_net = PolicyNetwork(args, device)
-        self.policy_net_target = deepcopy(self.policy_net) #PolicyNetwork(args, device)
-
 
         self.value_net1 = QNetwork(args, device)
         self.value_net2 = QNetwork(args, device)
 
+        if load:
+            self.policy_net = torch.load(actor_path, map_location=device)
+            self.value_net1 = torch.load(critic_path, map_location=device)
+            self.value_net2 = torch.load(critic_path, map_location=device)
+
+        # Copy for target networks
+        self.policy_net_target = deepcopy(self.policy_net)  # PolicyNetwork(args, device)
         self.value_net_target1 = deepcopy(self.value_net1)#QNetwork(args, device)
         self.value_net_target2 = deepcopy(self.value_net2)  # QNetwork(args, device)
 
