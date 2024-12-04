@@ -16,6 +16,7 @@ class RunningMeanStd(nn.Module):
         super().__init__()
         self.register_buffer("mean", th.zeros(shape))
         self.register_buffer("var", th.ones(shape))
+        self.register_buffer("cur_var", th.ones(shape))
         self.register_buffer("count", th.tensor(epsilon))
         # self.distributed = distributed and tu.is_distributed()
 
@@ -37,6 +38,7 @@ class RunningMeanStd(nn.Module):
         self.mean, self.var, self.count = update_mean_var_count_from_moments(
             self.mean, self.var, self.count, batch_mean, batch_var, batch_count
         )
+        self.cur_var = batch_var
 
 
 def update_mean_var_count_from_moments(
@@ -99,7 +101,7 @@ class RewardNormalizer:
         #     -self.cliprew,
         #     self.cliprew,
         # )
-        return (reward - self.ret_rms.mean) - (reward - self.ret_rms.mean)**2  #/ th.sqrt(self.ret_rms.var + self.epsilon)
+        return (reward - self.ret_rms.mean) - (0.5*self.ret_rms.cur_var)  #/ th.sqrt(self.ret_rms.var + self.epsilon)
 
 
 def backward_discounted_sum(prevret, reward, first, gamma):
