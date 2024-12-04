@@ -114,6 +114,10 @@ class Options:
         self.parser.add_argument('--plan_batch_size', type=int, default=1, help='')
         self.parser.add_argument('--planning_lr', type=float, default=1e-4, help='')
 
+        # multichain analysis
+        self.parser.add_argument('--variance_weight', type=float, default=0.5, help='1 if continous')
+        self.parser.add_argument('--variance_type', type=str, default='current', help='current or running')
+
         # deprecated todo: refactor
         self.parser.add_argument('--bgp_pred_mode', type=bool, default=False, help='future bg prediction')
         self.parser.add_argument('--n_bgp_steps', type=int, default=0, help='future eprediction horizon')

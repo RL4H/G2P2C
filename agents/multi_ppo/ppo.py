@@ -43,7 +43,9 @@ class PPO:
         self.shuffle_rollout = args.shuffle_rollout
         self.normalize_reward = args.normalize_reward
         self.reward_normaliser = RewardNormalizer(num_envs=self.n_training_workers, cliprew=10.0,
-                                                  gamma=self.gamma, epsilon=1e-8, per_env=False)
+                                                  gamma=self.gamma, epsilon=1e-8, per_env=False,
+                                                  variance_weight=self.args.variance_weight,
+                                                  variance_type=self.args.variance_type)
         self.return_type = args.return_type
         self.rollout_buffer = {}
         self.old_states = torch.rand(self.n_training_workers, self.n_step, self.feature_history, self.n_features,

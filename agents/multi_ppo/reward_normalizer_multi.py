@@ -66,7 +66,8 @@ class RewardNormalizer:
     have similar statistics to the rewards, and normalize the time-reversed rewards.
     """
 
-    def __init__(self, num_envs, cliprew=10.0, gamma=0.99, epsilon=1e-8, per_env=False):
+    def __init__(self, num_envs, cliprew=10.0, gamma=0.99, epsilon=1e-8, per_env=False, variance_weight=0.5,
+                 variance_type='current'):
         #print(f"Creating reward normalizer for {num_envs} environments.")
         ret_rms_shape = (num_envs,) if per_env else ()
         self.ret_rms = RunningMeanStd(shape=ret_rms_shape)
@@ -75,6 +76,8 @@ class RewardNormalizer:
         self.gamma = gamma
         self.epsilon = epsilon
         self.per_env = per_env
+        self.variance_weight = variance_weight
+        self.variance_type = variance_type
 
     def __call__(self, reward, first, type=None):
         if type == 'average':
@@ -101,7 +104,11 @@ class RewardNormalizer:
         #     -self.cliprew,
         #     self.cliprew,
         # )
-        return (reward - self.ret_rms.mean) - (0.5*self.ret_rms.cur_var)  #/ th.sqrt(self.ret_rms.var + self.epsilon)
+        if self.variance_type == 'current':
+            variance = self.ret_rms.cur_var
+        else:
+            variance = self.ret_rms.var
+        return reward - self.ret_rms.mean - (self.variance_weight * variance)
 
 
 def backward_discounted_sum(prevret, reward, first, gamma):
