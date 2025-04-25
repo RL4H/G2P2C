@@ -27,8 +27,8 @@ def set_args(args):
     args.target_kl = 0.01
     args.normalize_reward = True
     args.shuffle_rollout = True
-    args.n_training_workers = 16 if args.debug == 0 else 2
-    args.n_testing_workers = 20 if args.debug == 0 else 2
+    args.n_training_workers = 32
+    args.n_testing_workers = 32
     args.n_pi_epochs = 5
     args.n_vf_epochs = 5
     args.pi_lr = 1e-4 * 3
@@ -36,7 +36,7 @@ def set_args(args):
     args.batch_size = 1024
 
     # aux model learning
-    args.aux_buffer_max = 25000 if args.debug == 0 else 1000  # must be larger than steps at one update
+    args.aux_buffer_max = 35000
     args.aux_frequency = 1  # frequency of updates
     args.aux_vf_coef = 0.01
     args.aux_pi_coef = 0.01
