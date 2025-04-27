@@ -1,0 +1,75 @@
+<forceAllSubjInitialBg>false</forceAllSubjInitialBg>
+<allSubjInitialBg>120</allSubjInitialBg>
+<simName>Sim_CLI</simName>
+<humanModel/>
+<subjects>
+	<subject>
+		<population>Type1 Adult</population>
+		<name>adult#007</name>
+	</subject>
+</subjects>
+<insulins>
+	<insulin>
+		<slowRelease>false</slowRelease>
+		<basalChannelUse>false</basalChannelUse>
+		<bioavailability>0.66</bioavailability>
+		<name>PPO_Agent_Insulin</name>
+		<insulinAnalogName>normal</insulinAnalogName>
+		<releaseName>Standard Long Acting</releaseName>
+	</insulin>
+</insulins>
+<feedbackControl>
+	<sensors>
+		<sensor type="IdealCgmSensor" name="-" outSignalNames="CGMBG-"/>
+	</sensors>
+	<controlElements>
+		<control type="PluginControlElement" name="-" inSignalNames="CGMBG-">
+			<pluginFileGivenRelToConfigDir>true</pluginFileGivenRelToConfigDir>
+			<scriptFilename>../../../Desktop/G2P2C/Sim_CLI/RL_Agent_Plugin_v1.0.js</scriptFilename>
+		</control>
+	</controlElements>
+	<deliveryElements>
+		<delivery type="IdealPump" name="-"/>
+	</deliveryElements>
+</feedbackControl>
+<simTimeSpan>
+	<runDurationMin>1440</runDurationMin>
+	<simStartMinPastMidnight>0</simStartMinPastMidnight>
+	<simStartDaysSinceJan1>0</simStartDaysSinceJan1>
+	<simStartDayOfWeek>
+		<daysSinceMonday>0</daysSinceMonday>
+		<daySet>3</daySet>
+		<allButDaySet>7</allButDaySet>
+	</simStartDayOfWeek>
+</simTimeSpan>
+<randConfig>
+	<useUniversalRandomSeed>true</useUniversalRandomSeed>
+	<makeUniversalSeedSubjectSpecific>true</makeUniversalSeedSubjectSpecific>
+	<universalRandomSeed>0</universalRandomSeed>
+</randConfig>
+<drugPkPdControl>
+	<drugs/>
+</drugPkPdControl>
+<humanModelOptions>
+	<enableCircadianEffect>true</enableCircadianEffect>
+</humanModelOptions>
+<fileOptions>
+	<enableCustomSignalExport>false</enableCustomSignalExport>
+	<showRelativePathForSignalListLocation>true</showRelativePathForSignalListLocation>
+	<generateSignalHistoryCsv>true</generateSignalHistoryCsv>
+	<signalListLocation/>
+	<customSignalOutputOptionsConfig>
+		<enableMatlabExport>true</enableMatlabExport>
+	</customSignalOutputOptionsConfig>
+</fileOptions>
+<initAndFinalStateConfig>
+	<loadInitialStateFromFile>false</loadInitialStateFromFile>
+	<initialStateLocationRelative>true</initialStateLocationRelative>
+	<saveFinalStateToFile>false</saveFinalStateToFile>
+	<finalStateLocationRelative>true</finalStateLocationRelative>
+	<forceAllSubjInitialBg>false</forceAllSubjInitialBg>
+	<allSubjInitialBg>120</allSubjInitialBg>
+	<initialStateFileLocation/>
+	<finalStateFileLocation/>
+</initAndFinalStateConfig>
+
