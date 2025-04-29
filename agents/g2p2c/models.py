@@ -21,11 +21,16 @@ class FeatureExtractor(nn.Module):
                             batch_first=True, bidirectional=self.bidirectional)  # (seq_len, batch, input_size)
 
     def forward(self, s, feat, mode):
+        # print(f"[FeatureExtractor] mode={mode} s.shape={s.shape}, feat.shape={feat.shape}")
         if mode == 'batch':
+            # print(f"[FeatureExtractor_batch] mode={mode} s.shape={s.shape}, feat.shape={feat.shape}")
+            
             output, (hid, cell) = self.LSTM(s)
             lstm_output = hid.view(hid.size(1), -1)  # => batch , layers * hid
             feat = feat.squeeze(1)
         else:
+            # print(f"[FeatureExtractor_not batch] mode={mode} s.shape={s.shape}, feat.shape={feat.shape}")
+            
             s = s.unsqueeze(0)  # add batch dimension
             output, (hid, cell) = self.LSTM(s)  # hid = layers * dir, batch, hidden
             lstm_output = hid.squeeze(1)  # remove batch dimension
@@ -117,10 +122,10 @@ class ActionModule(nn.Module):
             dst = self.normalDistribution(mu, sigma)
             log_prob = dst.log_prob(action[0])
         except ValueError:
-            print('\nCurrent mu: {}, sigma: {}'.format(mu, sigma))
-            print('shape: {}. {}'.format(mu.shape, sigma.shape))
-            print(extract_states.shape)
-            print(extract_states)
+            # print('\nCurrent mu: {}, sigma: {}'.format(mu, sigma))
+            # print('shape: {}. {}'.format(mu.shape, sigma.shape))
+            # print(extract_states.shape)
+            # print(extract_states)
             log_prob = torch.ones(2, 1, device=self.device, dtype=torch.float32) * self.glucose_target
         # log_prob = dst.log_prob(action[0])
         # sigma = torch.ones(1, device=self.device, dtype=torch.float32) * 0.01
@@ -171,12 +176,16 @@ class ActorNetwork(nn.Module):
         self.t_to_meal = core.linear_scaling(x=0, x_min=0, x_max=self.args.t_meal)
 
     def forward(self, s, feat, old_action, mode, is_training=False):
+        # print("[ActorNetwork/Critic] input:", s, feat, old_action, mode)
+        # print("[ActorNetwork/Critic] shape:", s.shape, "feat shape:", feat.shape)
         extract_states, lstmOut = self.FeatureExtractor.forward(s, feat, mode)
         mu, sigma, action, log_prob = self.ActionModule.forward(extract_states)
         if mode == 'forward':
             cgm_mu, cgm_sigma, cgm = self.GlucoseModel.forward(lstmOut, action.detach(), mode)
         else:
             cgm_mu, cgm_sigma, cgm = self.GlucoseModel.forward(lstmOut, old_action.detach(), mode)
+        # print("[ActorNetwork/Critic] output:", mu, sigma, action, log_prob, cgm_mu, cgm_sigma, cgm)
+        # print("[ActorNetwork/Critic] output shape:", mu.shape, sigma.shape, action.shape, log_prob.shape, cgm_mu.shape,)
         return mu, sigma, action, log_prob, cgm_mu, cgm_sigma, cgm
 
     def update_state(self, s, cgm_pred, action, batch_size):
@@ -256,9 +265,13 @@ class CriticNetwork(nn.Module):
         self.aux_mode = args.aux_mode
         self.GlucoseModel = GlucoseModel(args, device)
     def forward(self, s, feat, action, cgm_pred=True, mode='forward'):
+        # print("[ActorNetwork/Critic] input:", s, feat, action, mode)
+        # print("[ActorNetwork/Critic] shape:", s.shape, "feat shape:", feat.shape)
         extract_states, lstmOut = self.FeatureExtractor.forward(s, feat, mode)
         value = self.ValueModule.forward(extract_states)
         cgm_mu, cgm_sigma, cgm = self.GlucoseModel.forward(lstmOut, action.detach(), mode) if cgm_pred else (None, None, None)
+        # print("[ActorNetwork/Critic] output:", value, cgm_mu, cgm_sigma, cgm)
+        # print("[ActorNetwork/Critic] output shape:", value.shape, cgm_mu.shape, cgm_sigma.shape)
         return value, cgm_mu, cgm_sigma, cgm
 
 
@@ -276,6 +289,7 @@ class ActorCritic(nn.Module):
         self.is_testing_worker = False
 
     def predict(self, s, feat):
+        # print("[predict] input s.shape:", getattr(s, "shape", None), "feat:", "None" if feat is None else getattr(feat, "shape", None))
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
         mean, std, action, log_prob, a_cgm_mu, a_cgm_sigma, a_cgm = self.Actor(s, feat, None, mode='forward',
@@ -284,6 +298,12 @@ class ActorCritic(nn.Module):
         return (mean, std, action, log_prob, a_cgm_mu, a_cgm_sigma, a_cgm), (state_value, c_cgm_mu,  c_cgm_sigma, c_cgm)
 
     def get_action(self, s, feat):
+        # print("[get_action] s.shape:", getattr(s, "shape", None), "feat:", "None" if feat is None else getattr(feat, "shape",None))
+        (mu, std, act, log_prob, a_cgm_mu, a_cgm_sig, a_cgm), (s_val, c_cgm_mu, c_cgm_sig, c_cgm) = self.predict(s, feat)
+        # print("[get_action] act:", act, "mu:", mu, "std:", std)
+        data = dict(mu=mu, std=std, action=act, log_prob=log_prob, state_value=s_val, a_cgm_mu=a_cgm_mu,
+                    a_cgm_sigma=a_cgm_sig, c_cgm_mu=c_cgm_mu, c_cgm_sigma=c_cgm_sig, a_cgm=a_cgm, c_cgm=c_cgm)
+        # print("[get_action] data:", data)
         (mu, std, act, log_prob, a_cgm_mu, a_cgm_sig, a_cgm), (s_val, c_cgm_mu, c_cgm_sig, c_cgm) = self.predict(s, feat)
         data = dict(mu=mu, std=std, action=act, log_prob=log_prob, state_value=s_val, a_cgm_mu=a_cgm_mu,
                     a_cgm_sigma=a_cgm_sig, c_cgm_mu=c_cgm_mu, c_cgm_sigma=c_cgm_sig, a_cgm=a_cgm, c_cgm=c_cgm)
