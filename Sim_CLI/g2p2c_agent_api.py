@@ -75,8 +75,9 @@ def load_agent(
     critic_path = os.path.join(ckpt_dir, f'episode_{episode}_Critic.pth')
 
     # 6. Load model objects
-    agent.policy.Actor = torch.load(actor_path, map_location=device)
-    agent.policy.Critic = torch.load(critic_path, map_location=device)
+    # Load full model objects (not just weights); disable weights_only to allow class unpickling
+    agent.policy.Actor = torch.load(actor_path, map_location=device, weights_only=False)
+    agent.policy.Critic = torch.load(critic_path, map_location=device, weights_only=False)
     agent.policy.Actor.eval()
     agent.policy.Critic.eval()
     return agent
