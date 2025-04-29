@@ -2,9 +2,12 @@
 Module: Sim_CLI/g2p2c_agent_api.py
 Purpose: Utility functions to load a G2P2C agent and perform inference
 """
+# Add repository root to path so that `utils` and `agents` can be imported
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 import importlib.util
-import os
 from typing import Optional
 
 import numpy as np
