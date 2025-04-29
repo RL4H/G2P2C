@@ -31,12 +31,16 @@ def load_agent(
     - episode: if provided, load corresponding episode Actor/Critic; else pick latest
     Returns: initialized G2P2C agent in eval mode
     """
-    # 1. Load args
+    # 1. Load args (and override experiment_dir for local environment)
     with open(args_json_path, 'r') as f:
         args_dict = json.load(f)
     args = Options().parse()
     for k, v in args_dict.items():
         setattr(args, k, v)
+    # Use local directory of args_json as experiment_dir
+    args.experiment_dir = os.path.abspath(os.path.dirname(args_json_path))
+    # Ensure experiment_dir exists (for log files)
+    os.makedirs(args.experiment_dir, exist_ok=True)
 
     # 2. Load parameters.py
     spec = importlib.util.spec_from_file_location('parameters', params_py_path)
