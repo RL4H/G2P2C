@@ -2,65 +2,101 @@
 Module: Sim_CLI/g2p2c_agent_api.py
 Purpose: Utility functions to load a G2P2C agent and perform inference
 """
-# Add repository root to path so that `utils` and `agents` can be imported
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # pathlib 사용 시 불필요할 수 있음
 import json
 import importlib.util
 from typing import Optional
+from pathlib import Path # pathlib 임포트
 
 import numpy as np
 import torch
 
+# utils와 agents를 임포트하기 위해 프로젝트 루트를 sys.path에 추가 (필요시 유지 또는 다른 방식 고려)
+_current_script_dir = Path(__file__).resolve().parent
+_project_root = _current_script_dir.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+# 이제 utils 및 agents 임포트 가능
 from utils.options import Options
 from agents.g2p2c.g2p2c import G2P2C
 
+# 프로젝트 루트 기준으로 기본 경로 설정 (load_agent 함수 외부에서도 사용 가능하도록)
+_DEFAULT_RESULTS_SUBDIR = "results/test"
+_DEFAULT_ARGS_JSON_REL_PATH = f"{_DEFAULT_RESULTS_SUBDIR}/args.json"
+_DEFAULT_PARAMS_PY_REL_PATH = f"{_DEFAULT_RESULTS_SUBDIR}/code/parameters.py"
+_DEFAULT_CHECKPOINTS_REL_DIR = f"{_DEFAULT_RESULTS_SUBDIR}/checkpoints"
+
+
 
 def load_agent(
-    args_json_path: str,
-    params_py_path: str,
+    # 경로 인자 제거 또는 기본값으로만 사용 (외부에서 거의 지정할 일 없음)
+    # args_json_path: str, # 제거됨
+    # params_py_path: str, # 제거됨
     device: Optional[torch.device] = None,
     episode: Optional[int] = None,
 ) -> G2P2C:
     """
-    Load G2P2C agent from saved arguments and checkpoints.
-    - args_json_path: path to args.json used in training
-    - params_py_path: path to parameters.py for setting args
+    Load G2P2C agent from saved arguments and checkpoints using fixed relative paths
+    from the project root.
     - device: torch.device (default: cpu)
     - episode: if provided, load corresponding episode Actor/Critic; else pick latest
     Returns: initialized G2P2C agent in eval mode
     """
-    # 1. Load args (and override experiment_dir for local environment)
+    # --- 경로 계산 (스크립트 위치 기준) ---
+    args_json_path = (_project_root / _DEFAULT_ARGS_JSON_REL_PATH).resolve()
+    params_py_path = (_project_root / _DEFAULT_PARAMS_PY_REL_PATH).resolve()
+    checkpoints_dir_abs = (_project_root / _DEFAULT_CHECKPOINTS_REL_DIR).resolve()
+
+    # 파일 존재 여부 확인 (오류 메시지 명확화)
+    if not args_json_path.is_file():
+        raise FileNotFoundError(f"args.json not found at expected path: {args_json_path}")
+    if not params_py_path.is_file():
+        raise FileNotFoundError(f"parameters.py not found at expected path: {params_py_path}")
+    if not checkpoints_dir_abs.is_dir():
+        raise FileNotFoundError(f"Checkpoints directory not found at expected path: {checkpoints_dir_abs}")
+
+    # 1. Load args (Use absolute path)
     with open(args_json_path, 'r') as f:
         args_dict = json.load(f)
-    args = Options().parse()
+
+    # Options().parse() 호출 시 빈 리스트 [] 전달!
+    args = Options().parse([]) # <--- 수정된 호출 방식!
+
+    # args_dict의 내용으로 args 객체 업데이트
     for k, v in args_dict.items():
         setattr(args, k, v)
-    # Use local directory of args_json as experiment_dir
-    args.experiment_dir = os.path.abspath(os.path.dirname(args_json_path))
-    # Ensure experiment_dir exists (for log files)
+
+    # experiment_dir 설정 (로드된 args.json 위치 기준으로 설정)
+    # 주의: args_dict에 experiment_dir이 있으면 그것을 사용할지,
+    # 아니면 args_json 위치 기준으로 재정의할지 정책 결정 필요.
+    # 여기서는 args_json 위치 기준으로 재정의
+    args.experiment_dir = str(args_json_path.parent.parent) # results/test 디렉토리의 절대 경로
+    # Ensure experiment_dir exists (이미 위에서 확인했지만 안전하게)
     os.makedirs(args.experiment_dir, exist_ok=True)
 
-    # 2. Load parameters.py
-    spec = importlib.util.spec_from_file_location('parameters', params_py_path)
+    # 2. Load parameters.py (Use absolute path)
+    spec = importlib.util.spec_from_file_location('parameters', str(params_py_path))
+    if spec is None or spec.loader is None:
+         raise ImportError(f"Could not load spec for parameters.py from {params_py_path}")
     params = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(params)
     params.set_args(args)
 
-    # 3. Determine device
+    # 3. Determine device (기존 로직 유지)
     device = device or torch.device('cpu')
 
-    # 4. Initialize agent (no load inside)
+    # 4. Initialize agent (기존 로직 유지)
     agent = G2P2C(args, device, load=False, path1=None, path2=None)
 
-    # 5. Locate checkpoint files
-    ckpt_dir = os.path.dirname(args.experiment_dir + '/checkpoints/')
+    # 5. Locate checkpoint files (Use absolute path)
+    # ckpt_dir 변수 이름을 checkpoints_dir_abs로 변경했으므로 맞춰줌
     # pick Actor/Critic paths
     if episode is None:
-        # find all Actor.pth and choose highest episode
         candidates = []
-        for fname in os.listdir(ckpt_dir):
+        for fname in os.listdir(checkpoints_dir_abs): # 절대 경로 사용
             if fname.endswith('_Actor.pth'):
                 parts = fname.split('_')
                 try:
@@ -69,19 +105,26 @@ def load_agent(
                 except Exception:
                     continue
         if not candidates:
-            raise FileNotFoundError('No Actor checkpoint found in ' + ckpt_dir)
+            raise FileNotFoundError(f'No Actor checkpoint found in {checkpoints_dir_abs}')
         episode = max(candidates, key=lambda x: x[0])[0]
-    actor_path = os.path.join(ckpt_dir, f'episode_{episode}_Actor.pth')
-    critic_path = os.path.join(ckpt_dir, f'episode_{episode}_Critic.pth')
 
-    # 6. Load model objects
-    # Load full model objects (not just weights); disable weights_only to allow class unpickling
-    agent.policy.Actor = torch.load(actor_path, map_location=device, weights_only=False)
-    agent.policy.Critic = torch.load(critic_path, map_location=device, weights_only=False)
+    # 경로 생성 시 pathlib 사용
+    actor_path = checkpoints_dir_abs / f'episode_{episode}_Actor.pth'
+    critic_path = checkpoints_dir_abs / f'episode_{episode}_Critic.pth'
+
+    # 체크포인트 파일 존재 확인 추가
+    if not actor_path.is_file():
+        raise FileNotFoundError(f"Actor checkpoint file not found: {actor_path}")
+    if not critic_path.is_file():
+         raise FileNotFoundError(f"Critic checkpoint file not found: {critic_path}")
+
+    # 6. Load model objects (Use absolute path)
+    # 보안 경고는 여전히 유효함: weights_only=False 사용 시 주의
+    agent.policy.Actor = torch.load(str(actor_path), map_location=device, weights_only=False)
+    agent.policy.Critic = torch.load(str(critic_path), map_location=device, weights_only=False)
     agent.policy.Actor.eval()
     agent.policy.Critic.eval()
     return agent
-
 
 def infer_action(
     agent: G2P2C,

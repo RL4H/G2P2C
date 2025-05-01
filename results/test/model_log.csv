@@ -53,3 +53,4 @@ policy_grad,value_grad,val_loss,exp_var,true_var,pi_loss,avg_rew
 policy_grad,value_grad,val_loss,exp_var,true_var,pi_loss,avg_rew
 policy_grad,value_grad,val_loss,exp_var,true_var,pi_loss,avg_rew
 policy_grad,value_grad,val_loss,exp_var,true_var,pi_loss,avg_rew
+policy_grad,value_grad,val_loss,exp_var,true_var,pi_loss,avg_rew

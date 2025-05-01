@@ -13,11 +13,7 @@ from utils.options import Options
 from Sim_CLI.g2p2c_agent_api import load_agent, infer_action
 
 ## (1) Agent 로드 및 초기화
-g2p2c_agent = load_agent(
-    args_json_path="results/test/args.json",
-    params_py_path="results/test/code/parameters.py",
-    device=torch.device("cpu"),
-)
+g2p2c_agent = load_agent(device=torch.device("cpu"))
 
 # --- (3) 추론 및 예외 처리 테스트 ---
 def test_g2p2c_inference(verbose=True):

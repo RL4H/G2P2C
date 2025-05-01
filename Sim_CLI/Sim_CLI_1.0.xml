@@ -25,7 +25,7 @@
 	<controlElements>
 		<control type="PluginControlElement" name="-" inSignalNames="CGMBG-">
 			<pluginFileGivenRelToConfigDir>true</pluginFileGivenRelToConfigDir>
-			<scriptFilename>../../../Desktop/G2P2C/Sim_CLI/RL_Agent_Plugin_v1.0.js</scriptFilename>
+			<scriptFilename>C:\Users\user\Desktop\G2P2C\Sim_CLI\RL_Agent_Plugin_v1.0.js</scriptFilename>
 		</control>
 	</controlElements>
 	<deliveryElements>
