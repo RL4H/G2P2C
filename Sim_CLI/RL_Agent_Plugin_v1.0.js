@@ -5,7 +5,7 @@
 
 // --- 설정 변수 ---
 var AGENT_COMMUNICATION_METHOD = 'WEB_SERVICE'; // 웹 서비스 방식 사용
-var AGENT_API_URL = "http://127.0.0.1:5000"; // FastAPI 서버 주소 - ** 실제 주소로 수정 필요 **
+var AGENT_API_URL = "http://127.0.0.1:5000"; // FastAPI 서버 주소 
 var WEB_REQUEST_TIMEOUT_MS = 5000; // 웹 서비스 타임아웃 (밀리초) - 필요시 조정
 
 var INSULIN_NAME_DEFINED_IN_DMMS = "PPO_Agent_Insulin"; // DMMS.R 'Insulin Definitions'에서 정의한 이름 - ** 확인 필요 **
