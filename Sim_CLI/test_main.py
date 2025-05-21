@@ -16,7 +16,7 @@ def test_predict_action_success():
     response = client.post("/predict_action", json=payload)
     assert response.status_code == 200, response.text
     data = response.json()
-    # 행동값이 범위 내인지 체크 (0.0 ~ 5.0)
+    # 행동값이 범위 내인지 체크 (0.0 ~ 5.0 U/h)
     assert "insulin_action_U_per_h" in data
     assert 0.0 <= data["insulin_action_U_per_h"] <= 5.0
 

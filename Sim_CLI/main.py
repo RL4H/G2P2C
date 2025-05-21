@@ -190,8 +190,7 @@ def predict_action(req: StateRequest):
             hc_state_processed=processed_hc_state_np
         )
 
-        ## !!! 위 수치가 인슐린 수치에 해당함. 
-        action_U_per_h *= 100
+        ## !!! 위 수치가 인슐린 수치에 해당함.
 
         print(f"INFO:     [LOG_MAIN_FINAL_ACTION_FROM_API] Action from infer_action (to be returned to JS): {action_U_per_h:.4f} U/h")
 
@@ -229,7 +228,7 @@ def predict_action(req: StateRequest):
             print(f"ERROR:    [LOG_MAIN_CSV_WRITE] Failed to write Simglucose format log: {csv_e}", file=sys.stderr)
         # ---------------------------------
 
-        return {"insulin_action_U_per_h": action_U_per_h}
+        return ActionResponse(insulin_action_U_per_h=action_U_per_h)
 
     except ValueError as ve:
         print(f"\n!!! ValueError processing /predict_action: {ve} !!!", file=sys.stderr)
