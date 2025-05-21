@@ -1,102 +1,79 @@
-"""
-Module: Sim_CLI/g2p2c_agent_api.py
-Purpose: Utility functions to load a G2P2C agent and perform inference
-"""
+# Sim_CLI/g2p2c_agent_api.py
+
 import os
 import sys
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # pathlib 사용 시 불필요할 수 있음
 import json
 import importlib.util
 from typing import Optional
-from pathlib import Path # pathlib 임포트
+from pathlib import Path
 
 import numpy as np
 import torch
 
-# utils와 agents를 임포트하기 위해 프로젝트 루트를 sys.path에 추가 (필요시 유지 또는 다른 방식 고려)
+# --- 프로젝트 루트 경로 설정 및 sys.path 추가 ---
 _current_script_dir = Path(__file__).resolve().parent
 _project_root = _current_script_dir.parent
 if str(_project_root) not in sys.path:
     sys.path.insert(0, str(_project_root))
+# ------------------------------------------------
 
-# 이제 utils 및 agents 임포트 가능
 from utils.options import Options
 from agents.g2p2c.g2p2c import G2P2C
 
-# 프로젝트 루트 기준으로 기본 경로 설정 (load_agent 함수 외부에서도 사용 가능하도록)
 _DEFAULT_RESULTS_SUBDIR = "results/test"
 _DEFAULT_ARGS_JSON_REL_PATH = f"{_DEFAULT_RESULTS_SUBDIR}/args.json"
-_DEFAULT_PARAMS_PY_REL_PATH = f"{_DEFAULT_RESULTS_SUBDIR}/code/parameters.py"
+_DEFAULT_PARAMS_PY_REL_PATH = f"{_DEFAULT_RESULTS_SUBDIR}/code/parameters.py" # 수정: code/ 하위
 _DEFAULT_CHECKPOINTS_REL_DIR = f"{_DEFAULT_RESULTS_SUBDIR}/checkpoints"
 
 
-
 def load_agent(
-    # 경로 인자 제거 또는 기본값으로만 사용 (외부에서 거의 지정할 일 없음)
-    # args_json_path: str, # 제거됨
-    # params_py_path: str, # 제거됨
     device: Optional[torch.device] = None,
     episode: Optional[int] = None,
 ) -> G2P2C:
-    """
-    Load G2P2C agent from saved arguments and checkpoints using fixed relative paths
-    from the project root.
-    - device: torch.device (default: cpu)
-    - episode: if provided, load corresponding episode Actor/Critic; else pick latest
-    Returns: initialized G2P2C agent in eval mode
-    """
-    # --- 경로 계산 (스크립트 위치 기준) ---
     args_json_path = (_project_root / _DEFAULT_ARGS_JSON_REL_PATH).resolve()
     params_py_path = (_project_root / _DEFAULT_PARAMS_PY_REL_PATH).resolve()
     checkpoints_dir_abs = (_project_root / _DEFAULT_CHECKPOINTS_REL_DIR).resolve()
 
-    # 파일 존재 여부 확인 (오류 메시지 명확화)
     if not args_json_path.is_file():
         raise FileNotFoundError(f"args.json not found at expected path: {args_json_path}")
     if not params_py_path.is_file():
-        raise FileNotFoundError(f"parameters.py not found at expected path: {params_py_path}")
+        # run_RL_agent.py에서 parameters.py를 code 폴더로 복사하므로, 해당 경로를 확인
+        alt_params_py_path = (_project_root / _DEFAULT_RESULTS_SUBDIR / "code" / "parameters.py").resolve()
+        if alt_params_py_path.is_file():
+            params_py_path = alt_params_py_path
+        else:
+            raise FileNotFoundError(f"parameters.py not found at expected paths: {params_py_path} or {alt_params_py_path}")
+
     if not checkpoints_dir_abs.is_dir():
         raise FileNotFoundError(f"Checkpoints directory not found at expected path: {checkpoints_dir_abs}")
 
-    # 1. Load args (Use absolute path)
     with open(args_json_path, 'r') as f:
         args_dict = json.load(f)
-
-    # Options().parse() 호출 시 빈 리스트 [] 전달!
-    args = Options().parse([]) # <--- 수정된 호출 방식!
-
-    # args_dict의 내용으로 args 객체 업데이트
+    
+    args = Options().parse([]) 
+    
     for k, v in args_dict.items():
         setattr(args, k, v)
 
-    # experiment_dir 설정 (로드된 args.json 위치 기준으로 설정)
-    # 주의: args_dict에 experiment_dir이 있으면 그것을 사용할지,
-    # 아니면 args_json 위치 기준으로 재정의할지 정책 결정 필요.
-    # 여기서는 args_json 위치 기준으로 재정의
-    args.experiment_dir = str(args_json_path.parent.parent) # results/test 디렉토리의 절대 경로
-    # Ensure experiment_dir exists (이미 위에서 확인했지만 안전하게)
+    args.experiment_dir = str(args_json_path.parent.parent) 
     os.makedirs(args.experiment_dir, exist_ok=True)
 
-    # 2. Load parameters.py (Use absolute path)
-    spec = importlib.util.spec_from_file_location('parameters', str(params_py_path))
+    spec = importlib.util.spec_from_file_location('agent_specific_parameters', str(params_py_path))
     if spec is None or spec.loader is None:
-         raise ImportError(f"Could not load spec for parameters.py from {params_py_path}")
-    params = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(params)
-    params.set_args(args)
+        raise ImportError(f"Could not load spec for parameters.py from {params_py_path}")
+    agent_params_module = importlib.util.module_from_spec(spec)
+    sys.modules['agent_specific_parameters'] = agent_params_module # 모듈 캐시에 추가 (중요)
+    spec.loader.exec_module(agent_params_module)
+    agent_params_module.set_args(args) # 이 함수가 args 객체를 최종적으로 수정
 
-    # 3. Determine device (기존 로직 유지)
     device = device or torch.device('cpu')
+    args.device = str(device)
 
-    # 4. Initialize agent (기존 로직 유지)
-    agent = G2P2C(args, device, load=False, path1=None, path2=None)
+    agent = G2P2C(args=args, device=device, load=False, path1=None, path2=None)
 
-    # 5. Locate checkpoint files (Use absolute path)
-    # ckpt_dir 변수 이름을 checkpoints_dir_abs로 변경했으므로 맞춰줌
-    # pick Actor/Critic paths
     if episode is None:
         candidates = []
-        for fname in os.listdir(checkpoints_dir_abs): # 절대 경로 사용
+        for fname in os.listdir(checkpoints_dir_abs):
             if fname.endswith('_Actor.pth'):
                 parts = fname.split('_')
                 try:
@@ -106,61 +83,117 @@ def load_agent(
                     continue
         if not candidates:
             raise FileNotFoundError(f'No Actor checkpoint found in {checkpoints_dir_abs}')
-        episode = max(candidates, key=lambda x: x[0])[0]
+        episode_to_load = max(candidates, key=lambda x: x[0])[0]
+    else:
+        episode_to_load = episode
 
-    # 경로 생성 시 pathlib 사용
-    actor_path = checkpoints_dir_abs / f'episode_{episode}_Actor.pth'
-    critic_path = checkpoints_dir_abs / f'episode_{episode}_Critic.pth'
+    actor_path = checkpoints_dir_abs / f'episode_{episode_to_load}_Actor.pth'
+    critic_path = checkpoints_dir_abs / f'episode_{episode_to_load}_Critic.pth'
 
-    # 체크포인트 파일 존재 확인 추가
     if not actor_path.is_file():
         raise FileNotFoundError(f"Actor checkpoint file not found: {actor_path}")
     if not critic_path.is_file():
-         raise FileNotFoundError(f"Critic checkpoint file not found: {critic_path}")
+        raise FileNotFoundError(f"Critic checkpoint file not found: {critic_path}")
+    
+    # PyTorch < 1.6 호환성을 위해 pickle_module 사용 가능성 고려 (일반적으로는 불필요)
+    # 또는 weights_only=True (PyTorch 1.13+) 사용 권장. 여기서는 원본 코드 방식 유지.
+    try:
+        agent.policy.Actor = torch.load(str(actor_path), map_location=device, weights_only=False)
+        agent.policy.Critic = torch.load(str(critic_path), map_location=device, weights_only=False)
+    except RuntimeError as e: # torch.load에서 pickle 관련 오류 발생 시
+        if "weights_only" in str(e): # PyTorch 1.13+에서 weights_only=False가 기본값이 아닐 때 발생 가능
+             agent.policy.Actor = torch.load(str(actor_path), map_location=device, weights_only=False)
+             agent.policy.Critic = torch.load(str(critic_path), map_location=device, weights_only=False)
+        else: # 다른 RuntimeError는 그대로 발생
+            raise e
 
-    # 6. Load model objects (Use absolute path)
-    # 보안 경고는 여전히 유효함: weights_only=False 사용 시 주의
-    agent.policy.Actor = torch.load(str(actor_path), map_location=device, weights_only=False)
-    agent.policy.Critic = torch.load(str(critic_path), map_location=device, weights_only=False)
+
     agent.policy.Actor.eval()
     agent.policy.Critic.eval()
+    
+    print(f"INFO:     Agent loaded with episode {episode_to_load} weights.")
     return agent
+
 
 def infer_action(
     agent: G2P2C,
-    history: np.ndarray,
-    feat: Optional[np.ndarray] = None,
+    state_hist_processed: np.ndarray, # StateSpace를 거친 정규화된 상태 이력
+    hc_state_processed: np.ndarray,   # StateSpace를 거친 정규화된 핸드크래프트 특징
 ) -> float:
-    """
-    Perform inference using loaded agent.
-    - history: np.ndarray shape (12, n_features)
-    - feat: np.ndarray shape (1, n_handcrafted_features)
-    Returns clipped float action within [args.insulin_min, args.insulin_max]
-    """
-    # 1. Validate history shape and values
-    if not isinstance(history, np.ndarray):
-        history = np.array(history, dtype=np.float32)
-    if history.ndim != 2:
-        raise ValueError(f'history must be 2D array, got ndim={history.ndim}, shape={history.shape}')
-    expected_shape = (agent.args.feature_history, agent.args.n_features)
-    if history.shape != expected_shape:
-        raise ValueError(f'history shape must be {expected_shape}, got {history.shape}')
-    if not np.all(np.isfinite(history)):
-        raise ValueError('history contains NaN or Inf')
-    history_tensor = history.astype(np.float32)
+    # 1. 입력 유효성 검증 (StateSpace를 거쳤으므로, 기본적인 타입 및 형태 위주)
+    if not isinstance(state_hist_processed, np.ndarray):
+        raise TypeError(f'state_hist_processed must be np.ndarray, got {type(state_hist_processed)}')
+    if not isinstance(hc_state_processed, np.ndarray):
+        raise TypeError(f'hc_state_processed must be np.ndarray, got {type(hc_state_processed)}')
 
-    # 2. Prepare feat
-    if feat is None:
-        n_hf = agent.args.n_handcrafted_features
-        feat = np.zeros((1, n_hf), dtype=np.float32)
-    if not isinstance(feat, np.ndarray):
-        feat = np.array(feat, dtype=np.float32)
-    feat_tensor = feat.astype(np.float32)
+    expected_hist_shape = (agent.args.feature_history, agent.args.n_features)
+    if state_hist_processed.shape != expected_hist_shape:
+        raise ValueError(f'state_hist_processed shape must be {expected_hist_shape}, got {state_hist_processed.shape}')
+    
+    # n_handcrafted_features는 agent.args에 의해 1로 설정됨 (agents/g2p2c/parameters.py)
+    expected_hc_shape = (1, agent.args.n_handcrafted_features) 
+    if hc_state_processed.shape != expected_hc_shape:
+        # hc_state_processed가 (1,)과 같이 1차원 배열로 올 수 있으므로, reshape 시도
+        if hc_state_processed.size == agent.args.n_handcrafted_features:
+            try:
+                hc_state_processed = hc_state_processed.reshape(1, agent.args.n_handcrafted_features)
+            except Exception as reshape_err:
+                 raise ValueError(f'hc_state_processed shape {hc_state_processed.shape} could not be reshaped to {expected_hc_shape}: {reshape_err}')
+        else:
+            raise ValueError(f'hc_state_processed shape must be {expected_hc_shape} or have {agent.args.n_handcrafted_features} elements, got {hc_state_processed.shape}')
 
-    # 3. Inference
-    out = agent.policy.get_action(history_tensor, feat_tensor)
-    action = float(out['action'][0])
 
-    # 4. Clip
-    action_clipped = float(np.clip(action, agent.args.insulin_min, agent.args.insulin_max))
+    if not np.all(np.isfinite(state_hist_processed)):
+        raise ValueError('state_hist_processed contains NaN or Inf after StateSpace processing.')
+    if not np.all(np.isfinite(hc_state_processed)):
+        raise ValueError('hc_state_processed contains NaN or Inf after StateSpace processing.')
+
+    # 2. NumPy 배열을 PyTorch 텐서로 변환
+    state_hist_tensor = torch.as_tensor(state_hist_processed, dtype=torch.float32, device=agent.device)
+    hc_state_tensor = torch.as_tensor(hc_state_processed, dtype=torch.float32, device=agent.device)
+    
+    # 3. 에이전트 정책을 사용하여 추론
+    with torch.no_grad():
+        # G2P2C의 ActorCritic.get_action은 내부적으로 predict를 호출하고,
+        # predict는 Actor.forward를 호출. Actor.forward는 단일 샘플 (배치 차원 없음)을 받아
+        # FeatureExtractor.forward 호출 시 unsqueeze로 배치 차원을 추가함.
+        action_data_dict = agent.policy.get_action(state_hist_tensor, hc_state_tensor)
+    
+    raw_action_model_output = float(action_data_dict['action']) # 모델 출력은 -1 ~ 1 범위
+
+    # 4. 모델 출력(-1~1)을 실제 인슐린 단위(U/h)로 변환 및 클리핑
+    # G2P2C Worker.rollout의 액션 처리 로직을 참고해야 함.
+    # action_obj = PumpAction(self.args.action_scale, self.args.action_type)
+    # scaled_action = action_obj.get_action(action_from_model, ...)
+    # 여기서는 action_type='exponential', action_scale=5 (parameters.py에서 설정된 args 값)
+    # exponential 변환: action_scale * exp((model_output - 1) * 4)
+    # (참고: G2P2C/utils/pumpAction.py 에 PumpAction 클래스가 있다면 해당 로직 사용)
+    
+    # 가정: G2P2C/utils/pumpAction.py에 PumpAction 클래스가 있고, get_action 메소드가 있다고 가정
+    # 이 부분이 없다면, 직접 변환 로직 구현 필요
+    try:
+        from utils.pumpAction import PumpAction # pumpAction.py가 utils 폴더에 있다고 가정
+        action_converter = PumpAction(agent.args.action_scale, agent.args.action_type)
+        # PumpAction.get_action은 model_output (-1~1)을 받아 스케일링된 액션을 반환
+        # model_output은 1차원 tensor 또는 scalar여야 할 수 있음.
+        final_action_U_per_h = action_converter.get_action(torch.tensor([raw_action_model_output], device=agent.device))
+        final_action_U_per_h = float(final_action_U_per_h.item()) # 텐서에서 float 값 추출
+    except ImportError:
+        print("WARNING: utils.pumpAction.PumpAction not found. Using direct exponential scaling as a fallback. This might differ from training.", file=sys.stderr)
+        # Fallback: 직접 exponential 변환 (G2P2C Worker에서 사용되는 방식과 유사하게)
+        # args.action_scale은 agents/g2p2c/parameters.py에서 5로 설정됨.
+        # action_type은 커맨드라인에서 'exponential'로 주어짐.
+        if agent.args.action_type == 'exponential':
+            final_action_U_per_h = agent.args.action_scale * np.exp((raw_action_model_output - 1) * 4)
+        else:
+            # 다른 action_type에 대한 처리 (예: linear scaling)
+            # (raw_action_model_output + 1) / 2 * (agent.args.insulin_max - agent.args.insulin_min) + agent.args.insulin_min
+            # 지금은 exponential만 고려
+            print(f"WARNING: Action type '{agent.args.action_type}' scaling not explicitly implemented in API fallback. Using raw model output scaled by action_scale.", file=sys.stderr)
+            final_action_U_per_h = raw_action_model_output * agent.args.action_scale # 단순 스케일링 (정확하지 않을 수 있음)
+
+    # 최종적으로 insulin_min, insulin_max 범위로 클리핑
+    action_clipped = float(np.clip(final_action_U_per_h, agent.args.insulin_min, agent.args.insulin_max))
+    
+    # print(f"DEBUG: Model raw output: {raw_action_model_output:.4f}, Scaled action: {final_action_U_per_h:.4f}, Clipped action: {action_clipped:.4f}")
     return action_clipped

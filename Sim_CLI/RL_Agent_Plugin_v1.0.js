@@ -1,29 +1,37 @@
 // DMMS.R JavaScript Plugin Control Element for RL Agent Interface
-// Version: 0.4.1 (Modification Plan 1 Applied)
-// Changes: Simplified initialize, moved array management to runIteration.
-// Assumes Python FastAPI server on the agent side.
+// Version: 1.0.0 (Specification for G2P2C Agent Applied)
+// Changes:
+// - Implemented 5-minute interval logic for API communication and history.
+// - Added 'hour' and 'meal' data to agent state.
+// - CGM history stores the last value of each 5-minute interval.
+// - Insulin history stores the U/h rate applied during the previous 5-minute interval.
+// - Insulin action from agent is applied consistently over the 5-minute interval.
 
 // --- 설정 변수 ---
 var AGENT_COMMUNICATION_METHOD = 'WEB_SERVICE'; // 웹 서비스 방식 사용
-var AGENT_API_URL = "http://127.0.0.1:5000"; // FastAPI 서버 주소 
-var WEB_REQUEST_TIMEOUT_MS = 5000; // 웹 서비스 타임아웃 (밀리초) - 필요시 조정
+var AGENT_API_URL = "http://127.0.0.1:5000"; // FastAPI 서버 주소
+var WEB_REQUEST_TIMEOUT_MS = 5000; // 웹 서비스 타임아웃 (밀리초)
 
 var INSULIN_NAME_DEFINED_IN_DMMS = "PPO_Agent_Insulin"; // DMMS.R 'Insulin Definitions'에서 정의한 이름 - ** 확인 필요 **
 var INSULIN_TARGET_KEY = "sqCustomInsulin1"; // ** 사용자가 정의한 순서에 따라 sqCustomInsulin2 등이 될 수 있음. 확인 필요! **
 var FALLBACK_INSULIN_KEY = "sqInsulinNormalBolus"; // sqCustomInsulinX 키 실패 시 사용할 표준 볼루스 키
 
 var PMOL_PER_UNIT = 6000.0;
-var FEATURE_HISTORY_LENGTH = 12;
+var FEATURE_HISTORY_LENGTH = 12; // Represents 12 * 5-minute intervals = 60 minutes
 var ACTION_MIN_U_PER_H = 0.0;
-var ACTION_MAX_U_PER_H = 5.0;
-var USE_FEAT_VECTOR = false; // 추가 특징 벡터 사용 여부 - ** 결정 및 구현 필요 **
+var ACTION_MAX_U_PER_H = 5.0; // 명세서에 따라 최대값 조정 필요 시 변경
+var USE_FEAT_VECTOR = false; // 추가 특징 벡터 사용 여부 - G2P2C는 정규화된 시간을 사용 (hour로 전달)
 
 // --- 전역 변수 (상태 관리용) ---
-var bgHistory = []; // 선언만 하고 초기화는 runIteration에서
-var insulinActionHistory = []; // 선언만 하고 초기화는 runIteration에서
+var debugLog = "";
+
+var bgHistory = []; // 5-minute interval CGM data
+var insulinActionHistory = []; // 5-minute interval applied insulin (U/h)
+
 var isInitialized = false;
-var lastAppliedAction_UperH = 0.0;
-var debugLog = ""; // 맨 위로 이동
+var lastAppliedAction_UperH = 0.0; // Action applied in the *current* 5-min interval (U/h)
+                                   // This is also used for insulinActionHistory for the *next* cycle.
+var current_rate_for_minute_application_U_per_H = 0.0; // Actual U/h rate to apply each minute
 
 // --- DMMS.R 필수 함수 ---
 
@@ -34,213 +42,225 @@ function signalDescription(signalIndex) {
     return "Unknown Signal";
 }
 
-// 수정된 initialize 함수 (단순화)
 function initialize(popName, subjName, simDuration, configDir, baseResultsDir, simName) {
-    debugLog = "[Initialize] Attempting simple initialization for subject: " + subjName + ", Sim: " + simName + " starting (WebService Mode).";
+    debugLog = "[Initialize] Attempting initialization for subject: " + subjName + ", Sim: " + simName + " (WebService Mode, 5-min interval logic).";
     try {
-        // 배열 초기화 로직 제거!
-        lastAppliedAction_UperH = 0.0; // 이전 액션 초기화
-        isInitialized = true; // 플래그 설정만 수행
-        debugLog += "\n[Initialize] Simple initialization complete. isInitialized set to true.";
+        bgHistory = []; // Clear history for new simulation
+        insulinActionHistory = [];
+
+        // Initialize history arrays with 0.0 to FEATURE_HISTORY_LENGTH
+        // This ensures they are pre-filled for the first API call if needed.
+        // Actual meaningful values will be pushed at 5-min intervals.
+        for (var i = 0; i < FEATURE_HISTORY_LENGTH; i++) {
+            bgHistory.push(0.0);
+            insulinActionHistory.push(0.0);
+        }
+
+        lastAppliedAction_UperH = 0.0;
+        current_rate_for_minute_application_U_per_H = 0.0;
+        isInitialized = true;
+        debugLog += "\n[Initialize] Initialization complete. isInitialized set to true. History arrays pre-filled.";
     } catch (e) {
-        debugLog += "\n[Initialize] !!! CRITICAL ERROR IN SIMPLE INITIALIZE: " + e;
-        isInitialized = false; // 오류 발생 시 false 유지
+        debugLog += "\n[Initialize] !!! CRITICAL ERROR IN INITIALIZE: " + e;
+        isInitialized = false;
     }
 }
 
-// 수정된 runIteration 함수 (배열 관리 로직 추가)
 function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseObject, timeObject, modelInputsToModObject) {
-    // initialize 실패 시 실행 방지
     if (!isInitialized) {
-        // 이 메시지는 initialize 실패 시 매번 기록될 것이므로, 최초 오류 외에는 반복 로깅 방지 가능
         if (debugLog.indexOf("runIteration called before initialize!") === -1) {
-             debugLog = "[Error] runIteration called before initialize!";
+            debugLog = "[Error] runIteration called before initialize!";
         }
         return;
     }
 
-    // runIteration 처음 호출 시 또는 배열 길이가 부족할 때 초기화/길이 조정
-    // (unshift는 배열 앞에 추가하므로, 길이를 채울 땐 반복 push나 다른 방식이 나을 수 있음)
-    // 여기서는 간단하게 push/shift 방식으로 길이 유지
-    if (bgHistory.length < FEATURE_HISTORY_LENGTH) {
-        debugLog += "\n[RunIteration] Initializing history arrays with 0.0 inside runIteration.";
-        // FEATURE_HISTORY_LENGTH 길이만큼 0.0으로 채우기
-        while(bgHistory.length < FEATURE_HISTORY_LENGTH) bgHistory.push(0.0);
-        while(insulinActionHistory.length < FEATURE_HISTORY_LENGTH) insulinActionHistory.push(0.0);
-        // 주의: 이 방식은 첫 실행 또는 리셋 시에만 동작하도록 개선할 수 있음
-    }
+    var currentMinuteAbs = NaN; // Absolute minutes from simulation start
+    var currentCGM = NaN;
+    var currentHour = NaN; // Hour of the day (0-23)
+    var currentMeal_g = 0.0; // Meal in grams for the current 5-min decision point
 
-
-    // 시간 정보 가져오기 (속성 이름 수정!)
-    var currentMinute = NaN;
-    var timeLog = "";
-    if (timeObject && typeof timeObject === 'object') {
-         // 속성 존재 여부 확인 후 사용
-        if (timeObject.minutesPastSimStart !== undefined && isFinite(timeObject.minutesPastSimStart)) {
-            currentMinute = timeObject.minutesPastSimStart;
-            timeLog = "Minute: " + currentMinute + " (from minutesPastSimStart)";
-        } else if (timeObject.dayOfYear !== undefined && isFinite(timeObject.dayOfYear) && timeObject.minutesPastMidnight !== undefined && isFinite(timeObject.minutesPastMidnight)) {
-            currentMinute = (timeObject.dayOfYear * 1440 + timeObject.minutesPastMidnight); // 대체 계산
-             timeLog = "Minute: " + currentMinute + " (calculated from DoY/MoM)";
-        } else {
-             timeLog = "Minute: NaN (Could not determine time from timeObject: " + JSON.stringify(timeObject) + ")";
-        }
+    // --- 1. 시간 및 현재 CGM 값 가져오기 (매분 실행) ---
+    if (timeObject && typeof timeObject === 'object' && timeObject.minutesPastSimStart !== undefined && isFinite(timeObject.minutesPastSimStart)) {
+        currentMinuteAbs = timeObject.minutesPastSimStart;
     } else {
-         timeLog = "Minute: NaN (timeObject is invalid)";
+        debugLog += "\n[RunIteration] Invalid timeObject or minutesPastSimStart. Skipping iteration.";
+        return;
     }
-    debugLog = "[RunIteration] " + timeLog;
+    debugLog = "[RunIteration] Minute: " + currentMinuteAbs;
 
-
-    // 1. 상태 정보 수집 및 가공
-    var currentCGM = sensorSigArray[0];
-    if (isNaN(currentCGM) || !isFinite(currentCGM)){
-        debugLog += "\n [Warning] Invalid CGM value received: " + currentCGM + ". Using 0 for history.";
-        currentCGM = 0.0; // 유효하지 않은 값은 0으로 처리 (또는 이전 값 유지 등 정책 결정)
+    currentCGM = sensorSigArray[0];
+    if (isNaN(currentCGM) || !isFinite(currentCGM)) {
+        debugLog += "\n[Warning] Invalid CGM value received: " + currentCGM + ". Using 0 for this reading.";
+        currentCGM = 0.0;
     }
-    debugLog += "\n Current CGM: " + currentCGM.toFixed(4);
+    debugLog += ", CGM: " + currentCGM.toFixed(2);
 
-    // 배열 길이 유지하며 값 업데이트 (push & shift)
-    bgHistory.push(currentCGM);
-    if (bgHistory.length > FEATURE_HISTORY_LENGTH) {
-        bgHistory.shift(); // 가장 오래된 데이터 제거
-    }
-    insulinActionHistory.push(lastAppliedAction_UperH); // 이전 스텝에서 *적용된* 액션 추가
-    if (insulinActionHistory.length > FEATURE_HISTORY_LENGTH) {
-        insulinActionHistory.shift(); // 가장 오래된 데이터 제거
-    }
+    // --- 2. 인슐린 적용 (매분 실행) ---
+    // 에이전트가 5분마다 결정한 주입률(current_rate_for_minute_application_U_per_H)을 매분 적용
+    var dose_pmol_per_Min_current = current_rate_for_minute_application_U_per_H / 60.0 * PMOL_PER_UNIT;
 
-    // prepareAgentState 호출 시 현재 배열 전달 (길이가 FEATURE_HISTORY_LENGTH가 되도록 함)
-    // slice를 사용하면 원본 배열을 변경하지 않고 복사본을 만들 수 있음
-    var currentBgHistory = bgHistory.slice(); // 현재 배열 복사
-    var currentInsHistory = insulinActionHistory.slice(); // 현재 배열 복사
-
-    // 길이가 부족한 경우 앞부분을 0으로 채움 (호출 전 확인)
-    while (currentBgHistory.length < FEATURE_HISTORY_LENGTH) currentBgHistory.unshift(0.0);
-    while (currentInsHistory.length < FEATURE_HISTORY_LENGTH) currentInsHistory.unshift(0.0);
-
-    var agentState = prepareAgentState(currentBgHistory, currentInsHistory, timeObject, nextMealObject, nextExerciseObject);
-    debugLog += "\n Prepared Agent State (History only): " + JSON.stringify(agentState); // 로그 간소화
-
-    // 2. 에이전트와 통신 (웹 서비스 - HTTP POST)
-    var agentAction_U_per_Hour = 0.0; // 기본값
-    var communicationSuccess = false;
-
-    try {
-        var requestBody = JSON.stringify(agentState);
-        var contentType = "application/json";
-        var success = httpWebServiceInvoker.performPostRequest(AGENT_API_URL + "/predict_action", requestBody, contentType, WEB_REQUEST_TIMEOUT_MS); // 엔드포인트 추가
-
-        if (success && !httpWebServiceInvoker.timeout() && httpWebServiceInvoker.responseStatusCode() >= 200 && httpWebServiceInvoker.responseStatusCode() < 300) {
-            var responseBody = httpWebServiceInvoker.responseBody();
-            debugLog += "\n Raw Response: " + responseBody;
-            try {
-                var parsedResponse = JSON.parse(responseBody);
-                if (parsedResponse && typeof parsedResponse.insulin_action_U_per_h === 'number' && isFinite(parsedResponse.insulin_action_U_per_h)) {
-                    agentAction_U_per_Hour = parsedResponse.insulin_action_U_per_h;
-                    communicationSuccess = true;
-                    debugLog += "\n Parsed Action (U/h): " + agentAction_U_per_Hour.toFixed(4);
-                } else {
-                    debugLog += "\n [Error] Invalid JSON structure/value in response: " + responseBody;
-                }
-            } catch (parseError) {
-                debugLog += "\n [Error] Failed to parse JSON response: " + parseError + "\nResponse body: " + responseBody;
-            }
-        } else {
-            debugLog += "\n [Error] Web Service Request Failed.";
-            if (httpWebServiceInvoker.timeout()) { debugLog += " Reason: Timeout"; }
-            else {
-                debugLog += " HTTP Status: " + httpWebServiceInvoker.responseStatusCode();
-                debugLog += " Description: " + httpWebServiceInvoker.resultDescription();
-                try { debugLog += " Server Response: " + httpWebServiceInvoker.responseBody(); } catch(e) {}
-            }
-        }
-    } catch (e) {
-        debugLog += "\n [Error] Exception during Web Service communication: " + e;
-    }
-
-    // Fallback 적용 (통신 실패 또는 유효하지 않은 값)
-    if (!communicationSuccess) {
-        debugLog += "\n Using fallback 0.0 U/h due to communication failure or invalid response.";
-        agentAction_U_per_Hour = 0.0;
-    }
-
-    // 3. 행동(Action) 적용
-    // 액션 값 클리핑 (0~5 U/h)
-    var clippedAction_U_per_Hour = Math.max(ACTION_MIN_U_PER_H, Math.min(ACTION_MAX_U_PER_H, agentAction_U_per_Hour));
-    if (clippedAction_U_per_Hour !== agentAction_U_per_Hour && communicationSuccess) {
-        debugLog += "\n Action clipped from " + agentAction_U_per_Hour.toFixed(4) + " to " + clippedAction_U_per_Hour.toFixed(4) + " U/h.";
-    }
-
-    // 단위 변환: U/h -> pmol/min
-    var dose_pmol_per_Min = clippedAction_U_per_Hour / 60.0 * PMOL_PER_UNIT;
-    debugLog += "\n Converted Dose (pmol/min): " + dose_pmol_per_Min.toFixed(4);
-
-    // 시뮬레이터 입력 객체 업데이트 (Custom Insulin Key 우선 시도, Fallback 적용)
-    var keyToUse = "";
+    var keyToUseForInsulin = "";
     if (INSULIN_TARGET_KEY in modelInputsToModObject) {
-        keyToUse = INSULIN_TARGET_KEY;
+        keyToUseForInsulin = INSULIN_TARGET_KEY;
     } else if (FALLBACK_INSULIN_KEY in modelInputsToModObject) {
-        keyToUse = FALLBACK_INSULIN_KEY;
-        debugLog += "\n [Warning] Target key '" + INSULIN_TARGET_KEY + "' not found! Using fallback key '" + keyToUse + "'. Check INSULIN_TARGET_KEY setting.";
+        keyToUseForInsulin = FALLBACK_INSULIN_KEY;
+        debugLog += "\n[Warning] Target key '" + INSULIN_TARGET_KEY + "' not found! Using fallback key '" + keyToUseForInsulin + "'.";
     } else {
-        debugLog += "\n [Error] Neither target key '" + INSULIN_TARGET_KEY + "' nor fallback key '" + FALLBACK_INSULIN_KEY + "' found in modelInputsToModObject! Cannot apply insulin dose.";
-        // 키를 찾을 수 없을 때의 처리 (예: 오류 상태 설정 또는 0 적용 등)
-        // 사용 가능한 키 로깅 추가:
-        debugLog += "\n Available keys in modelInputsToModObject: " + Object.keys(modelInputsToModObject).join(', ');
+        debugLog += "\n[Error] Neither target key '" + INSULIN_TARGET_KEY + "' nor fallback key '" + FALLBACK_INSULIN_KEY + "' found! Cannot apply insulin.";
     }
 
-    if (keyToUse !== "") {
-        // 기존 값에 더하는 것이 아니라, 해당 스텝의 주입률로 설정해야 함
-        modelInputsToModObject[keyToUse] = dose_pmol_per_Min;
-        debugLog += "\n Applied dose to key: " + keyToUse + " = " + dose_pmol_per_Min.toFixed(4) + " pmol/min";
+    if (keyToUseForInsulin !== "") {
+        modelInputsToModObject[keyToUseForInsulin] = dose_pmol_per_Min_current;
+        // debugLog += "\nApplied " + current_rate_for_minute_application_U_per_H.toFixed(4) + " U/h (" + dose_pmol_per_Min_current.toFixed(4) + " pmol/min) to " + keyToUseForInsulin;
     }
 
-    // 다음 스텝 이력 저장을 위해 현재 적용한 액션 저장 (U/h 단위, 클리핑된 값)
-    lastAppliedAction_UperH = clippedAction_U_per_Hour;
 
-    debugLog += "\n[RunIteration] End of iteration " + (isNaN(currentMinute) ? "NaN" : currentMinute);
+    // --- 3. 5분 간격 처리 로직 (API 호출, 이력 업데이트 등) ---
+    if (currentMinuteAbs % 5 === 0) {
+        debugLog += "\n--- 5-Minute Interval Boundary (Minute: " + currentMinuteAbs + ") ---";
+
+        // 3a. 현재 시간(hour) 및 식사량(meal) 정보 추출
+        currentHour = Math.floor(timeObject.minutesPastMidnight / 60) % 24;
+        debugLog += "\n Current Hour: " + currentHour;
+
+        // 식사량 정보: 현재 5분 간격 시작 시점에 active한 식사 (g 단위)
+        // modelInputsToModObject.fullMealCarbMgExpectedAtStart: 식사 시작 시점에만 해당 식사의 총 탄수화물량(mg) 표시
+        currentMeal_g = (modelInputsToModObject.fullMealCarbMgExpectedAtStart || 0) / 1000.0;
+        if(currentMeal_g > 0) {
+            debugLog += "\n Meal starting/active: " + currentMeal_g.toFixed(2) + " g";
+        } else {
+            debugLog += "\n No meal starting at this 5-min interval.";
+        }
+
+
+        // 3b. 이력 배열 업데이트 (5분 간격 데이터)
+        // CGM 이력: 현재 CGM 값 (5분 간격의 마지막 값)을 사용
+        bgHistory.push(currentCGM);
+        if (bgHistory.length > FEATURE_HISTORY_LENGTH) {
+            bgHistory.shift();
+        }
+        debugLog += "\n Updated bgHistory (last 5min CGM): " + currentCGM.toFixed(2) + ", Length: " + bgHistory.length;
+
+        // 인슐린 이력: *이전* 5분 동안 적용되었던 인슐린 액션 (lastAppliedAction_UperH)
+        insulinActionHistory.push(lastAppliedAction_UperH);
+        if (insulinActionHistory.length > FEATURE_HISTORY_LENGTH) {
+            insulinActionHistory.shift();
+        }
+        debugLog += "\n Updated insulinActionHistory (previous 5min U/h): " + lastAppliedAction_UperH.toFixed(4) + ", Length: " + insulinActionHistory.length;
+
+        // 3c. 에이전트 상태 준비
+        // slice()로 복사본을 만들어 전달 (prepareAgentState에서 변경하지 않도록)
+        var agentState = prepareAgentState(
+            bgHistory.slice(),
+            insulinActionHistory.slice(),
+            currentHour,
+            currentMeal_g,
+            timeObject,   // 추가 정보 전달용 (필요시 prepareAgentState에서 활용)
+            nextMealObject, // 추가 정보 전달용
+            nextExerciseObject // 추가 정보 전달용
+        );
+        debugLog += "\n Prepared Agent State for API: " + JSON.stringify(agentState);
+
+        // 3d. 에이전트와 통신 (웹 서비스 - HTTP POST)
+        var agentDecidedAction_U_per_Hour = 0.0; // 기본값
+        var communicationSuccess = false;
+
+        try {
+            var requestBody = JSON.stringify(agentState);
+            var contentType = "application/json";
+            var success = httpWebServiceInvoker.performPostRequest(AGENT_API_URL + "/predict_action", requestBody, contentType, WEB_REQUEST_TIMEOUT_MS);
+
+            if (success && !httpWebServiceInvoker.timeout() && httpWebServiceInvoker.responseStatusCode() >= 200 && httpWebServiceInvoker.responseStatusCode() < 300) {
+                var responseBody = httpWebServiceInvoker.responseBody();
+                debugLog += "\n Raw API Response: " + responseBody;
+                try {
+                    var parsedResponse = JSON.parse(responseBody);
+                    if (parsedResponse && typeof parsedResponse.insulin_action_U_per_h === 'number' && isFinite(parsedResponse.insulin_action_U_per_h)) {
+                        agentDecidedAction_U_per_Hour = parsedResponse.insulin_action_U_per_h;
+                        communicationSuccess = true;
+                        debugLog += "\n Parsed Action from Agent (U/h): " + agentDecidedAction_U_per_Hour.toFixed(4);
+                    } else {
+                        debugLog += "\n [Error] Invalid JSON structure/value in API response: " + responseBody;
+                    }
+                } catch (parseError) {
+                    debugLog += "\n [Error] Failed to parse JSON API response: " + parseError + "\nResponse body: " + responseBody;
+                }
+            } else {
+                debugLog += "\n [Error] Web Service Request Failed.";
+                if (httpWebServiceInvoker.timeout()) { debugLog += " Reason: Timeout"; }
+                else {
+                    debugLog += " HTTP Status: " + httpWebServiceInvoker.responseStatusCode();
+                    debugLog += " Description: " + httpWebServiceInvoker.resultDescription();
+                    try { debugLog += " Server Response: " + httpWebServiceInvoker.responseBody(); } catch(e) { /* ignore */}
+                }
+            }
+        } catch (e) {
+            debugLog += "\n [Error] Exception during Web Service communication: " + e;
+        }
+
+        // 3e. 폴백(Fallback) 및 액션 값 클리핑
+        if (!communicationSuccess) {
+            debugLog += "\n Using fallback 0.0 U/h due to communication failure or invalid response.";
+            agentDecidedAction_U_per_Hour = 0.0; // 통신 실패 시 기본 액션
+        }
+
+        var clippedAction_U_per_Hour = Math.max(ACTION_MIN_U_PER_H, Math.min(ACTION_MAX_U_PER_H, agentDecidedAction_U_per_Hour));
+        if (clippedAction_U_per_Hour !== agentDecidedAction_U_per_Hour && communicationSuccess) {
+            debugLog += "\n Action clipped from " + agentDecidedAction_U_per_Hour.toFixed(4) + " to " + clippedAction_U_per_Hour.toFixed(4) + " U/h.";
+        }
+        
+        // 3f. 다음 5분 동안 적용할 인슐린 주입률 업데이트 및 이력용 값 저장
+        current_rate_for_minute_application_U_per_H = clippedAction_U_per_Hour;
+        lastAppliedAction_UperH = clippedAction_U_per_Hour; // 다음 5분 간격의 이력에 사용될 값
+
+        debugLog += "\n Set current_rate_for_minute_application_U_per_H for next 5 mins to: " + current_rate_for_minute_application_U_per_H.toFixed(4) + " U/h.";
+        debugLog += "\n--- End of 5-Minute Interval Logic ---";
+
+    } // End of 5-minute interval block
+
+    // debugLog += "\n[RunIteration] End of iteration " + currentMinuteAbs; // 분당 로그 너무 많으면 주석처리
 }
 
-// 수정된 prepareAgentState 함수 (입력 배열 길이 보장 가정)
-function prepareAgentState(bgHist, insHist, timeObj, mealObj, exerciseObj) {
-    var history = [];
-    // 입력 배열(bgHist, insHist)의 길이가 FEATURE_HISTORY_LENGTH라고 가정
+// prepareAgentState 함수 수정: hour, meal 파라미터 추가
+function prepareAgentState(bgHist, insHist, currentHour, currentMeal_g, timeObj, mealObj, exerciseObj) {
+    var historyForAgent = [];
+    // bgHist, insHist는 이미 FEATURE_HISTORY_LENGTH 길이로 가정 (호출부에서 slice 등으로 복사 및 길이 관리)
+    // 또는 여기서 길이를 한 번 더 보장할 수 있음
     for(var i = 0; i < FEATURE_HISTORY_LENGTH; i++){
-         // 방어 코드 추가: 배열 요소 유효성 검사
         var bg = (i < bgHist.length && typeof bgHist[i] === 'number' && isFinite(bgHist[i])) ? bgHist[i] : 0.0;
         var ins = (i < insHist.length && typeof insHist[i] === 'number' && isFinite(insHist[i])) ? insHist[i] : 0.0;
-        history.push([bg, ins]);
+        historyForAgent.push([bg, ins]);
     }
 
-    var state = { "history": history };
+    var state = {
+        "history": historyForAgent,
+        "hour": currentHour,       // 현재 시간 (0-23)
+        "meal": currentMeal_g      // 현재 식사량 (g)
+    };
 
-    if (USE_FEAT_VECTOR) {
+    if (USE_FEAT_VECTOR) { // 현재 명세서에서는 hour, meal을 직접 사용하므로 이 부분은 선택적
         var features = [];
-        // --- 특징 벡터 계산 로직 구현 ---
-        // 예시: features.push(timeObj.minutesPastMidnight / 1440.0);
-        // features.push(mealObj.minutesUntilNextMeal / 60.0); // 시간 단위로 정규화 등
-        // features.push(exerciseObj.minutesUntilNextSession / 60.0);
-        // -------------------------------
-        // NaN/Inf 값 방지 필요
+        // 예시: features.push(timeObj.minutesPastMidnight / 1440.0); // G2P2C는 'hour'를 직접 사용
+        // features.push(mealObj.amountMg / 1000.0 / 100.0); // 식사량 정규화 예시
+        // ... 기타 필요한 특징 벡터 계산
         state["feat"] = features.map(function(f) { return isFinite(f) ? f : 0.0; });
     }
     return state;
 }
 
-
 function cleanup() {
-    debugLog = "[Cleanup] Simulation finished for subject."; // Subject 이름 추가 가능 (subjName은 전역 변수가 아님)
-    // 전역 변수 초기화 (선택 사항)
+    debugLog = "[Cleanup] Simulation finished.";
     bgHistory = [];
     insulinActionHistory = [];
     isInitialized = false;
     lastAppliedAction_UperH = 0.0;
+    current_rate_for_minute_application_U_per_H = 0.0;
+    // debugLog += "\n[Cleanup] Globals reset."; // 필요시 로그 추가
 }
 
-
-function requiresSqInsulinSupport() { return true; } // 사용자 정의 인슐린 사용 가정
+function requiresSqInsulinSupport() { return true; }
 function requiresSqGlucoseSupport() { return false; }
-function requiresInsulinDosingSupport() { return false; } // DMMS 내부 dosing 로직 사용 안 함
+function requiresInsulinDosingSupport() { return false; }
 function requiresCPeptideSupport() { return false; }
 function requiresSqGlucagonSupport() { return false; }
-function debugLoggingEnabled() { return true; } // 디버그 로그 활성화
+function debugLoggingEnabled() { return true; }
