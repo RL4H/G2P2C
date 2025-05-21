@@ -149,12 +149,15 @@ def predict_action(req: StateRequest):
         
         current_cgm_raw = req.history[-1][0]
         previous_insulin_action_raw = req.history[-1][1]
-        current_hour_raw = req.hour # JavaScript에서 받은 현재 시간(시)
+        current_hour_raw = req.hour  # JavaScript에서 받은 현재 시간(시)
         current_meal_raw = req.meal if req.meal is not None else 0.0
 
-        print(f"INFO:     [LOG_MAIN_RAW_INPUTS_TO_STATESPACE] Raw inputs for StateSpace.update(): "
-              f"cgm={current_cgm_raw:.2f}, ins(prev_action)={previous_insulin_action_raw:.4f}, "
-              f"hour={current_hour_raw:.1f}, meal={current_meal_raw:.1f}")
+        print(
+            f"INFO:     [LOG_MAIN_RAW_INPUTS_TO_STATESPACE] Raw inputs for StateSpace.update(): "
+            f"cgm={current_cgm_raw:.2f}, ins(prev_action)={previous_insulin_action_raw:.4f}, "
+            f"hour_from_req={current_hour_raw:.1f}, t_step_for_state={current_t_step}, "
+            f"meal={current_meal_raw:.1f}"
+        )
 
         if not (np.isfinite(current_cgm_raw) and
                 np.isfinite(previous_insulin_action_raw) and
@@ -166,9 +169,9 @@ def predict_action(req: StateRequest):
             cgm=current_cgm_raw,
             ins=previous_insulin_action_raw,
             meal=current_meal_raw,
-            hour=current_hour_raw,
-            meal_type=0, 
-            carbs=0      
+            hour=current_t_step,
+            meal_type=0,
+            carbs=0
         )
         
         print(f"INFO:     [LOG_MAIN_STATESPACE_OUTPUT] StateSpace.update() returned: \n"
@@ -218,7 +221,10 @@ def predict_action(req: StateRequest):
             with open(LOG_FILE_PATH, 'a', newline='') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=SimglucoseLogHeader)
                 writer.writerow(log_row_dict)
-            print(f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: (epi={log_row_dict['epi']}, t={log_row_dict['t']})")
+            print(
+                f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: "
+                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, req_hour={current_hour_raw})"
+            )
         except Exception as csv_e:
             print(f"ERROR:    [LOG_MAIN_CSV_WRITE] Failed to write Simglucose format log: {csv_e}", file=sys.stderr)
         # ---------------------------------
