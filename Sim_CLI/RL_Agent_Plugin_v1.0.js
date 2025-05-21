@@ -77,7 +77,7 @@ function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseOb
     var currentMinuteAbs = NaN; // Absolute minutes from simulation start
     var currentCGM = NaN;
     var currentHour = NaN; // Hour of the day (0-23)
-    var currentMeal_g = 0.0; // Meal in grams for the current 5-min decision point
+    var timeToNextMealSteps = 0.0; // Time until next meal in 5-min steps (0 if unknown)
 
     // --- 1. 시간 및 현재 CGM 값 가져오기 (매분 실행) ---
     if (timeObject && typeof timeObject === 'object' && timeObject.minutesPastSimStart !== undefined && isFinite(timeObject.minutesPastSimStart)) {
@@ -123,13 +123,21 @@ function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseOb
         currentHour = Math.floor(timeObject.minutesPastMidnight / 60) % 24;
         debugLog += "\n Current Hour: " + currentHour;
 
-        // 식사량 정보: 현재 5분 간격 시작 시점에 active한 식사 (g 단위)
-        // modelInputsToModObject.fullMealCarbMgExpectedAtStart: 식사 시작 시점에만 해당 식사의 총 탄수화물량(mg) 표시
-        currentMeal_g = (modelInputsToModObject.fullMealCarbMgExpectedAtStart || 0) / 1000.0;
-        if(currentMeal_g > 0) {
-            debugLog += "\n Meal starting/active: " + currentMeal_g.toFixed(2) + " g";
-        } else {
-            debugLog += "\n No meal starting at this 5-min interval.";
+        // 다음 식사까지 남은 시간 정보를 계산 (분 단위 → 5분 스텝)
+        var minutesUntilNextMeal = 0;
+        if (nextMealObject && typeof nextMealObject === 'object') {
+            if (nextMealObject.minutesUntilNextMeal !== undefined &&
+                isFinite(nextMealObject.minutesUntilNextMeal)) {
+                minutesUntilNextMeal = nextMealObject.minutesUntilNextMeal;
+            } else if (nextMealObject.minutes_to_next_meal !== undefined &&
+                       isFinite(nextMealObject.minutes_to_next_meal)) {
+                minutesUntilNextMeal = nextMealObject.minutes_to_next_meal;
+            }
+        }
+        timeToNextMealSteps = minutesUntilNextMeal / 5.0; // 남은 시간을 5분 스텝으로 전달
+        if (minutesUntilNextMeal > 0) {
+            debugLog += "\n Time until next meal: " + minutesUntilNextMeal.toFixed(1) + " min";
+            debugLog += "\n No upcoming meal info or meal announcements disabled.";
         }
 
 
@@ -154,7 +162,7 @@ function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseOb
             bgHistory.slice(),
             insulinActionHistory.slice(),
             currentHour,
-            currentMeal_g,
+            timeToNextMealSteps,
             timeObject,   // 추가 정보 전달용 (필요시 prepareAgentState에서 활용)
             nextMealObject, // 추가 정보 전달용
             nextExerciseObject // 추가 정보 전달용
@@ -221,8 +229,8 @@ function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseOb
     // debugLog += "\n[RunIteration] End of iteration " + currentMinuteAbs; // 분당 로그 너무 많으면 주석처리
 }
 
-// prepareAgentState 함수 수정: hour, meal 파라미터 추가
-function prepareAgentState(bgHist, insHist, currentHour, currentMeal_g, timeObj, mealObj, exerciseObj) {
+// prepareAgentState 함수 수정: hour, meal 파라미터(다음 식사까지 남은 시간) 추가
+function prepareAgentState(bgHist, insHist, currentHour, timeToNextMealSteps, timeObj, mealObj, exerciseObj) {
     var historyForAgent = [];
     // bgHist, insHist는 이미 FEATURE_HISTORY_LENGTH 길이로 가정 (호출부에서 slice 등으로 복사 및 길이 관리)
     // 또는 여기서 길이를 한 번 더 보장할 수 있음
@@ -235,13 +243,13 @@ function prepareAgentState(bgHist, insHist, currentHour, currentMeal_g, timeObj,
     var state = {
         "history": historyForAgent,
         "hour": currentHour,       // 현재 시간 (0-23)
-        "meal": currentMeal_g      // 현재 식사량 (g)
+        "meal": timeToNextMealSteps // 다음 식사까지 남은 시간 (5분 스텝)
     };
 
     if (USE_FEAT_VECTOR) { // 현재 명세서에서는 hour, meal을 직접 사용하므로 이 부분은 선택적
         var features = [];
         // 예시: features.push(timeObj.minutesPastMidnight / 1440.0); // G2P2C는 'hour'를 직접 사용
-        // features.push(mealObj.amountMg / 1000.0 / 100.0); // 식사량 정규화 예시
+        // features.push(mealObj.minutesUntilNextMeal / 5.0 / 20.0); // 남은 시간 정규화 예시
         // ... 기타 필요한 특징 벡터 계산
         state["feat"] = features.map(function(f) { return isFinite(f) ? f : 0.0; });
     }

@@ -103,10 +103,13 @@ async def lifespan(app: FastAPI):
     app_state.clear()
 
 class StateRequest(BaseModel):
-    # JavaScript에서 current_minute_abs를 보내지 않는다는 가정하에 Pydantic 모델은 이전 상태 유지
-    history: List[List[float]] = Field(..., description="길이 12의 리스트, 각 요소는 [혈당(mg/dL), 이전 인슐린 액션(U/h)].")
-    hour: float = Field(..., description="현재 시간 (0-23 사이의 실수 또는 정수).")
-    meal: Optional[float] = Field(0.0, description="현재 스텝의 식사량 (탄수화물 g, 없으면 0.0).")
+    history: List[List[float]] = Field(
+        ..., description="길이 12의 리스트, 각 요소는 [혈당(mg/dL), 이전 인슐린 액션(U/h)]."
+    )
+    # 'hour' 필드는 더 이상 클라이언트에서 전달하지 않는다. 서버가 내부에서 생성한다.
+    meal: Optional[float] = Field(
+        0.0, description="현재 스텝의 식사량 (탄수화물 g, 없으면 0.0)."
+    )
 
 class ActionResponse(BaseModel):
     insulin_action_U_per_h: float = Field(..., description="0.0~5.0 U/h 사이의 실수")
@@ -149,20 +152,23 @@ def predict_action(req: StateRequest):
         
         current_cgm_raw = req.history[-1][0]
         previous_insulin_action_raw = req.history[-1][1]
-        current_hour_raw = req.hour  # JavaScript에서 받은 현재 시간(시)
+                # 시간 정보는 서버에서 생성: API 호출 순서(current_t_step)를 그대로 사용
+        generated_hour = current_t_step
         current_meal_raw = req.meal if req.meal is not None else 0.0
 
         print(
             f"INFO:     [LOG_MAIN_RAW_INPUTS_TO_STATESPACE] Raw inputs for StateSpace.update(): "
             f"cgm={current_cgm_raw:.2f}, ins(prev_action)={previous_insulin_action_raw:.4f}, "
-            f"hour_from_req={current_hour_raw:.1f}, t_step_for_state={current_t_step}, "
+            f"hour_generated={generated_hour:.1f}, t_step_for_state={current_t_step}, "
             f"meal={current_meal_raw:.1f}"
         )
 
-        if not (np.isfinite(current_cgm_raw) and
-                np.isfinite(previous_insulin_action_raw) and
-                np.isfinite(current_hour_raw) and
-                np.isfinite(current_meal_raw)):
+        if not (
+            np.isfinite(current_cgm_raw)
+            and np.isfinite(previous_insulin_action_raw)
+            and np.isfinite(generated_hour)
+            and np.isfinite(current_meal_raw)
+        ):
             raise ValueError(f"NaN/Inf in raw inputs.")
 
         processed_state_hist_np, processed_hc_state_list = state_space.update(
@@ -215,7 +221,7 @@ def predict_action(req: StateRequest):
                 'sigma': np.nan,
                 'prob': np.nan,
                 'state_val': np.nan,
-                'day_hour': int(current_hour_raw), # JavaScript에서 받은 시간(시)
+                'day_hour': int(generated_hour),  # 서버에서 생성한 시간 정보
                 'day_min': day_min_for_log
             }
             with open(LOG_FILE_PATH, 'a', newline='') as csvfile:
@@ -223,17 +229,16 @@ def predict_action(req: StateRequest):
                 writer.writerow(log_row_dict)
             print(
                 f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: "
-                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, req_hour={current_hour_raw})"
+                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, generated_hour={generated_hour})"
             )
             print(
                 f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: "
-                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, req_hour={current_hour_raw})"
+                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, generated_hour={generated_hour})"
             )
         except Exception as csv_e:
             print(f"ERROR:    [LOG_MAIN_CSV_WRITE] Failed to write Simglucose format log: {csv_e}", file=sys.stderr)
         # ---------------------------------
 
-        return ActionResponse(insulin_action_U_per_h=action_U_per_h)
         return ActionResponse(insulin_action_U_per_h=action_U_per_h)
 
     except ValueError as ve:
