@@ -166,8 +166,8 @@ def predict_action(req: StateRequest):
             cgm=current_cgm_raw,
             ins=previous_insulin_action_raw,
             meal=current_meal_raw,
-            hour=current_hour_raw,
-            meal_type=0, 
+            hour=current_t_step,
+            meal_type=0,
             carbs=0      
         )
         
@@ -188,7 +188,7 @@ def predict_action(req: StateRequest):
         )
 
         ## !!! 위 수치가 인슐린 수치에 해당함. 
-        action_U_per_h *= 100
+        # action_U_per_h *= 100
 
         print(f"INFO:     [LOG_MAIN_FINAL_ACTION_FROM_API] Action from infer_action (to be returned to JS): {action_U_per_h:.4f} U/h")
 
@@ -218,12 +218,15 @@ def predict_action(req: StateRequest):
             with open(LOG_FILE_PATH, 'a', newline='') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=SimglucoseLogHeader)
                 writer.writerow(log_row_dict)
-            print(f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: (epi={log_row_dict['epi']}, t={log_row_dict['t']})")
+            print(
+                f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: "
+                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, req_hour={current_hour_raw})"
+            )
         except Exception as csv_e:
             print(f"ERROR:    [LOG_MAIN_CSV_WRITE] Failed to write Simglucose format log: {csv_e}", file=sys.stderr)
         # ---------------------------------
 
-        return {"insulin_action_U_per_h": action_U_per_h}
+        return ActionResponse(insulin_action_U_per_h=action_U_per_h)
 
     except ValueError as ve:
         print(f"\n!!! ValueError processing /predict_action: {ve} !!!", file=sys.stderr)
