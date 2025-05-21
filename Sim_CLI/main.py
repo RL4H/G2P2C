@@ -149,12 +149,15 @@ def predict_action(req: StateRequest):
         
         current_cgm_raw = req.history[-1][0]
         previous_insulin_action_raw = req.history[-1][1]
-        current_hour_raw = req.hour # JavaScript에서 받은 현재 시간(시)
+        current_hour_raw = req.hour  # JavaScript에서 받은 현재 시간(시)
         current_meal_raw = req.meal if req.meal is not None else 0.0
 
-        print(f"INFO:     [LOG_MAIN_RAW_INPUTS_TO_STATESPACE] Raw inputs for StateSpace.update(): "
-              f"cgm={current_cgm_raw:.2f}, ins(prev_action)={previous_insulin_action_raw:.4f}, "
-              f"hour={current_hour_raw:.1f}, meal={current_meal_raw:.1f}")
+        print(
+            f"INFO:     [LOG_MAIN_RAW_INPUTS_TO_STATESPACE] Raw inputs for StateSpace.update(): "
+            f"cgm={current_cgm_raw:.2f}, ins(prev_action)={previous_insulin_action_raw:.4f}, "
+            f"hour_from_req={current_hour_raw:.1f}, t_step_for_state={current_t_step}, "
+            f"meal={current_meal_raw:.1f}"
+        )
 
         if not (np.isfinite(current_cgm_raw) and
                 np.isfinite(previous_insulin_action_raw) and
@@ -222,10 +225,15 @@ def predict_action(req: StateRequest):
                 f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: "
                 f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, req_hour={current_hour_raw})"
             )
+            print(
+                f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: "
+                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, req_hour={current_hour_raw})"
+            )
         except Exception as csv_e:
             print(f"ERROR:    [LOG_MAIN_CSV_WRITE] Failed to write Simglucose format log: {csv_e}", file=sys.stderr)
         # ---------------------------------
 
+        return ActionResponse(insulin_action_U_per_h=action_U_per_h)
         return ActionResponse(insulin_action_U_per_h=action_U_per_h)
 
     except ValueError as ve:
