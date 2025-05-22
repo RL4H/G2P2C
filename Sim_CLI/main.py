@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
     
     try:
         print("INFO:     [LIFESPAN_LOAD_AGENT_START] Loading G2P2C agent...")
-        loaded_g2p2c_agent = load_agent(device=torch.device("cpu"), episode=15)
+        loaded_g2p2c_agent = load_agent(device=torch.device("cpu"), episode=195)
         app_state["agent"] = loaded_g2p2c_agent
         print("INFO:     [LIFESPAN_LOAD_AGENT_END] G2P2C Agent loaded successfully.")
 
@@ -197,7 +197,7 @@ def predict_action(req: StateRequest):
         )
 
         ## !!! 위 수치가 인슐린 수치에 해당함. 
-        # action_U_per_h *= 100
+        # action_U_per_h *= 0
 
         print(f"INFO:     [LOG_MAIN_FINAL_ACTION_FROM_API] Action from infer_action (to be returned to JS): {action_U_per_h:.4f} U/h")
 

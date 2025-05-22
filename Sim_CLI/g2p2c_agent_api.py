@@ -9,6 +9,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from utils.pumpAction import Pump
+
 
 # --- 프로젝트 루트 경로 설정 및 sys.path 추가 ---
 _current_script_dir = Path(__file__).resolve().parent
@@ -163,35 +165,17 @@ def infer_action(
 
     # 4. 모델 출력(-1~1)을 실제 인슐린 단위(U/h)로 변환 및 클리핑
     # G2P2C Worker.rollout의 액션 처리 로직을 참고해야 함.
-    # action_obj = PumpAction(self.args.action_scale, self.args.action_type)
-    # scaled_action = action_obj.get_action(action_from_model, ...)
-    # 여기서는 action_type='exponential', action_scale=5 (parameters.py에서 설정된 args 값)
-    # exponential 변환: action_scale * exp((model_output - 1) * 4)
-    # (참고: G2P2C/utils/pumpAction.py 에 PumpAction 클래스가 있다면 해당 로직 사용)
-    
-    # 가정: G2P2C/utils/pumpAction.py에 PumpAction 클래스가 있고, get_action 메소드가 있다고 가정
-    # 이 부분이 없다면, 직접 변환 로직 구현 필요
-    try:
-        from utils.pumpAction import PumpAction # pumpAction.py가 utils 폴더에 있다고 가정
-        action_converter = PumpAction(agent.args.action_scale, agent.args.action_type)
-        # PumpAction.get_action은 model_output (-1~1)을 받아 스케일링된 액션을 반환
-        # model_output은 1차원 tensor 또는 scalar여야 할 수 있음.
-        final_action_U_per_h = action_converter.get_action(torch.tensor([raw_action_model_output], device=agent.device))
-        final_action_U_per_h = float(final_action_U_per_h.item()) # 텐서에서 float 값 추출
-    except ImportError:
-        print("WARNING: utils.pumpAction.PumpAction not found. Using direct exponential scaling as a fallback. This might differ from training.", file=sys.stderr)
-        # Fallback: 직접 exponential 변환 (G2P2C Worker에서 사용되는 방식과 유사하게)
-        # args.action_scale은 agents/g2p2c/parameters.py에서 5로 설정됨.
-        # action_type은 커맨드라인에서 'exponential'로 주어짐.
-        if agent.args.action_type == 'exponential':
-            final_action_U_per_h = agent.args.action_scale * np.exp((raw_action_model_output - 1) * 4)
-        else:
-            # 다른 action_type에 대한 처리 (예: linear scaling)
-            # (raw_action_model_output + 1) / 2 * (agent.args.insulin_max - agent.args.insulin_min) + agent.args.insulin_min
-            # 지금은 exponential만 고려
-            print(f"WARNING: Action type '{agent.args.action_type}' scaling not explicitly implemented in API fallback. Using raw model output scaled by action_scale.", file=sys.stderr)
-            final_action_U_per_h = raw_action_model_output * agent.args.action_scale # 단순 스케일링 (정확하지 않을 수 있음)
+    if agent.args.action_type == 'exponential':
+        final_action_U_per_h = agent.args.action_scale * np.exp((raw_action_model_output) * 4)
+    else:
+        # 기타 스케일링 방식은 학습 코드와 동일하게 구현돼 있지 않으므로 단순 스케일링 사용
+        print(
+            f"WARNING: Action type '{agent.args.action_type}' not fully supported. Using linear scaling as fallback.",
+            file=sys.stderr,
+        )
+        final_action_U_per_h = raw_action_model_output * agent.args.action_scale
 
+    
     # 최종적으로 insulin_min, insulin_max 범위로 클리핑
     action_clipped = float(np.clip(final_action_U_per_h, agent.args.insulin_min, agent.args.insulin_max))
     

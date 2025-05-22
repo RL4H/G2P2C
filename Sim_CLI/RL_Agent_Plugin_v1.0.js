@@ -21,7 +21,6 @@ var FEATURE_HISTORY_LENGTH = 12; // Represents 12 * 5-minute intervals = 60 minu
 var ACTION_MIN_U_PER_H = 0.0;
 var ACTION_MAX_U_PER_H = 5.0; // 명세서에 따라 최대값 조정 필요 시 변경
 var USE_FEAT_VECTOR = false; // 추가 특징 벡터 사용 여부 - G2P2C는 정규화된 시간을 사용 (hour로 전달)
-var PREDEFINED_BASAL_U_PER_H = 1.0; // 초기 12 스텝 동안 적용할 기본 basal rate
 
 // --- 전역 변수 (상태 관리용) ---
 var debugLog = "";
@@ -33,7 +32,6 @@ var isInitialized = false;
 var lastAppliedAction_UperH = 0.0; // Action applied in the *current* 5-min interval (U/h)
                                    // This is also used for insulinActionHistory for the *next* cycle.
 var current_rate_for_minute_application_U_per_H = 0.0; // Actual U/h rate to apply each minute
-var warmupStepCounter = 0; // Number of 5-min steps executed with predefined basal
 
 // --- DMMS.R 필수 함수 ---
 
@@ -58,9 +56,8 @@ function initialize(popName, subjName, simDuration, configDir, baseResultsDir, s
             insulinActionHistory.push(0.0);
         }
 
-        lastAppliedAction_UperH = PREDEFINED_BASAL_U_PER_H;
-        current_rate_for_minute_application_U_per_H = PREDEFINED_BASAL_U_PER_H;
-        warmupStepCounter = 0;
+        lastAppliedAction_UperH = 0.0;
+        current_rate_for_minute_application_U_per_H = 0.0;
         isInitialized = true;
         debugLog += "\n[Initialize] Initialization complete. isInitialized set to true. History arrays pre-filled.";
     } catch (e) {
@@ -159,35 +156,27 @@ function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseOb
         }
         debugLog += "\n Updated insulinActionHistory (previous 5min U/h): " + lastAppliedAction_UperH.toFixed(4) + ", Length: " + insulinActionHistory.length;
 
-        warmupStepCounter += 1;
-        if (warmupStepCounter < FEATURE_HISTORY_LENGTH) {
-            // Warm-up phase: apply predefined basal and skip API call
-            current_rate_for_minute_application_U_per_H = PREDEFINED_BASAL_U_PER_H;
-            lastAppliedAction_UperH = PREDEFINED_BASAL_U_PER_H;
-            debugLog += "\n Warmup step " + warmupStepCounter + "/" + FEATURE_HISTORY_LENGTH +
-                       " applying basal " + PREDEFINED_BASAL_U_PER_H.toFixed(4) + " U/h.";
-        } else {
-            // 3c. 에이전트 상태 준비
-            // slice()로 복사본을 만들어 전달 (prepareAgentState에서 변경하지 않도록)
-            var agentState = prepareAgentState(
-                bgHistory.slice(),
-                insulinActionHistory.slice(),
-                currentHour,
-                timeToNextMealSteps,
-                timeObject,   // 추가 정보 전달용 (필요시 prepareAgentState에서 활용)
-                nextMealObject, // 추가 정보 전달용
-                nextExerciseObject // 추가 정보 전달용
-            );
-            debugLog += "\n Prepared Agent State for API: " + JSON.stringify(agentState);
+        // 3c. 에이전트 상태 준비
+        // slice()로 복사본을 만들어 전달 (prepareAgentState에서 변경하지 않도록)
+        var agentState = prepareAgentState(
+            bgHistory.slice(),
+            insulinActionHistory.slice(),
+            currentHour,
+            timeToNextMealSteps,
+            timeObject,   // 추가 정보 전달용 (필요시 prepareAgentState에서 활용)
+            nextMealObject, // 추가 정보 전달용
+            nextExerciseObject // 추가 정보 전달용
+        );
+        debugLog += "\n Prepared Agent State for API: " + JSON.stringify(agentState);
 
-            // 3d. 에이전트와 통신 (웹 서비스 - HTTP POST)
-            var agentDecidedAction_U_per_Hour = 0.0; // 기본값
-            var communicationSuccess = false;
+        // 3d. 에이전트와 통신 (웹 서비스 - HTTP POST)
+        var agentDecidedAction_U_per_Hour = 0.0; // 기본값
+        var communicationSuccess = false;
 
-            try {
-                var requestBody = JSON.stringify(agentState);
-                var contentType = "application/json";
-                var success = httpWebServiceInvoker.performPostRequest(AGENT_API_URL + "/predict_action", requestBody, contentType, WEB_REQUEST_TIMEOUT_MS);
+        try {
+            var requestBody = JSON.stringify(agentState);
+            var contentType = "application/json";
+            var success = httpWebServiceInvoker.performPostRequest(AGENT_API_URL + "/predict_action", requestBody, contentType, WEB_REQUEST_TIMEOUT_MS);
 
             if (success && !httpWebServiceInvoker.timeout() && httpWebServiceInvoker.responseStatusCode() >= 200 && httpWebServiceInvoker.responseStatusCode() < 300) {
                 var responseBody = httpWebServiceInvoker.responseBody();
@@ -235,8 +224,6 @@ function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseOb
         debugLog += "\n Set current_rate_for_minute_application_U_per_H for next 5 mins to: " + current_rate_for_minute_application_U_per_H.toFixed(4) + " U/h.";
         debugLog += "\n--- End of 5-Minute Interval Logic ---";
 
-        }
-
     } // End of 5-minute interval block
 
     // debugLog += "\n[RunIteration] End of iteration " + currentMinuteAbs; // 분당 로그 너무 많으면 주석처리
@@ -276,7 +263,6 @@ function cleanup() {
     isInitialized = false;
     lastAppliedAction_UperH = 0.0;
     current_rate_for_minute_application_U_per_H = 0.0;
-    warmupStepCounter = 0;
     // debugLog += "\n[Cleanup] Globals reset."; // 필요시 로그 추가
 }
 
