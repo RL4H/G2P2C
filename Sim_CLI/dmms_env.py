@@ -1,11 +1,16 @@
 import subprocess
+import time
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any
 from collections import namedtuple
+
+import logging
 
 import gym
 from gym import spaces
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class DmmsEnv(gym.Env):
@@ -25,6 +30,8 @@ class DmmsEnv(gym.Env):
         self.io_root.mkdir(parents=True, exist_ok=True)
         self.episode_counter = 0
         self.proc: subprocess.Popen | None = None
+        self._max_connect_attempts = 20
+        self._connect_interval = 0.5
 
         # older versions of ``gym`` do not accept the ``dtype`` argument in
         # ``spaces.Box``.  Since the exact version used can vary, rely on the
@@ -45,8 +52,24 @@ class DmmsEnv(gym.Env):
         self.results_dir = self.io_root / f"episode_{self.episode_counter}"
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self._start_process(self.results_dir)
-        resp = httpx.get(f"{self.server_url}/get_state")
-        resp.raise_for_status()
+        last_error: Exception | None = None
+        for _ in range(self._max_connect_attempts):
+            try:
+                resp = httpx.get(f"{self.server_url}/get_state")
+                resp.raise_for_status()
+                break
+            except Exception as e:
+                last_error = e
+                if self.proc is not None and self.proc.poll() is not None:
+                    raise RuntimeError(
+                        "DMMS.R process terminated before handshake"
+                    ) from e
+                time.sleep(self._connect_interval)
+        else:
+            raise RuntimeError(
+                f"Failed to connect to {self.server_url}/get_state after {self._max_connect_attempts} attempts"
+            ) from last_error
+
         data = resp.json()
         obs_val = data.get("cgm")
         info = data.get("info", {})
@@ -89,6 +112,11 @@ class DmmsEnv(gym.Env):
 
     def close(self) -> None:
         if self.proc is not None:
+            try:
+                httpx.post(f"{self.server_url}/episode_end")
+            except Exception as exc:
+                logger.warning("Failed to notify episode end: %s", exc)
+
             if self.proc.poll() is None:
                 self.proc.terminate()
                 try:
