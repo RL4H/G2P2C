@@ -10,7 +10,7 @@ DMMS.R 에서 JavaScript 플러그인을 통해 호출되는 ``/predict_action``
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from contextlib import asynccontextmanager
 import numpy as np
 import torch
