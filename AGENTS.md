@@ -77,6 +77,46 @@ consider the following workflow:
 These guidelines should help maintainers and contributors keep the code base
 consistent while extending the project to support external simulators.
 
+## DMMS.R 시뮬레이터를 “코드(스크립트)”로 실행하는 기본 원리
+
+사용자 GUI를 거치지 않고도 DMMS.R 시뮬레이션은 명령행 인터페이스(CLI) 로 직접 호출할 수 있습니다.
+핵심은 GUI에서 미리 저장해 둔 설정 파일(= configuration, Rx Plan) 과 함께 DMMS.R 실행 파일을 호출하는 방식입니다.
+
+요약
+형식 : DMMS.R config.xml log.txt [results_dir]
+반복 실험 : BAT / PowerShell / Python 스크립트를 통해 순차 또는 병렬 호출
+충돌 방지 : 병렬 시 각각 다른 결과 폴더나 시뮬레이션 이름 사용
+GUI는 한 번만 : 설정 파일을 미리 만들어 두어야 CLI가 실행 가능
+
+이렇게 하면 DMMS.R 시뮬레이션을 “코드 수준”에서 자동화 · 대량 실행할 수 있습니다.
+
+| 요소                                | 동작 원리                                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `&` (호출 연산자)                      | 따옴표로 묶인 **문자열**을 *실행 가능한 명령* 으로 변환한다. PowerShell 은 `"string"`만 놓으면 *단순 문자열* 로 간주하기 때문에, `&`가 반드시 필요하다.                   |
+| `"C:\Program Files\…\DMMS.R.exe"` | 공백(Program Files) 때문에 전체를 따옴표로 감쌌다.                                                                                      |
+| `"C:\…\Sim_CLI_1.2.xml"`          | **<config file>** – GUI에서 *Save Rx Plan…* 으로 만든 XML.                                                                     |
+| `"log_single.txt"`                | **<log file>** – 실행·오류 메시지가 여기에 append 된다.                                                                               |
+| `"\results_test"`                 | **<results dir>** – 드라이브 글자 없이 백슬래시로 시작하면 “현재 드라이브의 루트”를 의미한다. 따라서 `C:\results_test` 가 된다. (상대 경로로 쓰려면 `.\results_test`) |
+
+DMMS.R 실행 파일은 “`프로그램 경로  +  세 개 인자`” 형태의 호출을 받으면, 매뉴얼 Appendix B 에 정의된 CLI 모드로 전환되어 시뮬레이션을 수행한다 .
+
+---
+
+### 2-1. Python (subprocess) 예시
+
+```python
+from subprocess import run, CalledProcessError
+exe = r"C:\Program Files\The Epsilon Group\DMMS.R\simulator\DMMS.R.exe"
+cfg = r"C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml"
+log = r"log_single.txt"
+out = r"results_test"          # 상대 폴더면 pathlib.Path.cwd()/...
+try:
+    run([exe, cfg, log, out], check=True)
+except CalledProcessError as e:
+    print("DMMS.R 실패:", e.returncode)
+```
+
+
 ## 응답 방식
 
 사용자의 요청에 최선을 다하여 응답하며, 한국어로 친절하고 자세히 응답해라.
