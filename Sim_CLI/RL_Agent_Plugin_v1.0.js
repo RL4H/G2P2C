@@ -271,6 +271,19 @@ function cleanup() {
     isInitialized = false;
     lastAppliedAction_UperH = 0.0;
     current_rate_for_minute_application_U_per_H = 0.0;
+    try {
+        var success = httpWebServiceInvoker.performPostRequest(
+            AGENT_API_URL + "/episode_end",
+            "{}",
+            "application/json",
+            WEB_REQUEST_TIMEOUT_MS
+        );
+        if (!success) {
+            debugLog += "\n[Cleanup] Failed to notify /episode_end.";
+        }
+    } catch(e) {
+        debugLog += "\n[Cleanup] Exception during /episode_end POST: " + e;
+    }
     // debugLog += "\n[Cleanup] Globals reset."; // 필요시 로그 추가
 }
 
