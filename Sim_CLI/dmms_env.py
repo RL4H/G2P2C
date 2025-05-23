@@ -26,8 +26,13 @@ class DmmsEnv(gym.Env):
         self.episode_counter = 0
         self.proc: subprocess.Popen | None = None
 
-        self.action_space = spaces.Box(low=0.0, high=5.0, shape=(1,), dtype=float)
-        self.observation_space = spaces.Box(low=-float("inf"), high=float("inf"), shape=(12, 2), dtype=float)
+        # older versions of ``gym`` do not accept the ``dtype`` argument in
+        # ``spaces.Box``.  Since the exact version used can vary, rely on the
+        # default dtype to maximise compatibility.
+        self.action_space = spaces.Box(low=0.0, high=5.0, shape=(1,))
+        self.observation_space = spaces.Box(
+            low=-float("inf"), high=float("inf"), shape=(12, 2)
+        )
 
     def _start_process(self, results_dir: Path) -> None:
         log_file = results_dir / "dmms.log"
