@@ -22,4 +22,6 @@ torch==2.2.0+cu118
 torchaudio==2.2.0+cu118
 torchvision==0.17.0+cu118
 tornado==6.4.2
+fastapi==0.110.0
+httpx==0.27.0
 
