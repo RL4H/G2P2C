@@ -1,5 +1,7 @@
-// DMMS.R JavaScript Plugin Control Element for RL Agent Interface
+// DMMS.R에서 RL 에이전트와 통신하기 위한 JavaScript 플러그인
 // Version: 1.0.0 (Specification for G2P2C Agent Applied)
+// 이 스크립트는 매분 호출되는 `runIteration` 함수 내에서 5분 간격으로 상태를
+// FastAPI 서버에 전송하고, 받은 인슐린 주입률을 다음 5분 동안 적용한다.
 // Changes:
 // - Implemented 5-minute interval logic for API communication and history.
 // - Added 'hour' and 'meal' data to agent state.
@@ -33,15 +35,18 @@ var lastAppliedAction_UperH = 0.0; // Action applied in the *current* 5-min inte
                                    // This is also used for insulinActionHistory for the *next* cycle.
 var current_rate_for_minute_application_U_per_H = 0.0; // Actual U/h rate to apply each minute
 
-// --- DMMS.R 필수 함수 ---
+// --- DMMS.R가 호출하는 필수 함수들 ---
 
-function numSignals() { return 1; } // CGM 입력 하나
+// 시뮬레이터가 요구하는 입력 시그널 개수 반환 (CGM 한 개)
+function numSignals() { return 1; }
 
+// 각 시그널에 대한 설명 문자열 반환
 function signalDescription(signalIndex) {
     if (signalIndex === 0) { return "Blood Glucose Input (CGM)"; }
     return "Unknown Signal";
 }
 
+// 시뮬레이션 시작 시 호출되어 내부 상태를 초기화한다.
 function initialize(popName, subjName, simDuration, configDir, baseResultsDir, simName) {
     debugLog = "[Initialize] Attempting initialization for subject: " + subjName + ", Sim: " + simName + " (WebService Mode, 5-min interval logic).";
     try {
@@ -66,6 +71,7 @@ function initialize(popName, subjName, simDuration, configDir, baseResultsDir, s
     }
 }
 
+// 매 분 실행되며 5분 간격으로 에이전트와 통신해 인슐린 값을 결정한다.
 function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseObject, timeObject, modelInputsToModObject) {
     if (!isInitialized) {
         if (debugLog.indexOf("runIteration called before initialize!") === -1) {
@@ -229,7 +235,8 @@ function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseOb
     // debugLog += "\n[RunIteration] End of iteration " + currentMinuteAbs; // 분당 로그 너무 많으면 주석처리
 }
 
-// prepareAgentState 함수 수정: hour, meal 파라미터(다음 식사까지 남은 시간) 추가
+// 에이전트에 전달할 상태 객체를 구성한다.
+// bgHist와 insHist는 각각 최근 12개의 혈당값과 인슐린 주입률을 의미한다.
 function prepareAgentState(bgHist, insHist, currentHour, timeToNextMealSteps, timeObj, mealObj, exerciseObj) {
     var historyForAgent = [];
     // bgHist, insHist는 이미 FEATURE_HISTORY_LENGTH 길이로 가정 (호출부에서 slice 등으로 복사 및 길이 관리)
@@ -256,6 +263,7 @@ function prepareAgentState(bgHist, insHist, currentHour, timeToNextMealSteps, ti
     return state;
 }
 
+// 시뮬레이션 종료 시 호출되어 모든 전역 상태를 초기화한다.
 function cleanup() {
     debugLog = "[Cleanup] Simulation finished.";
     bgHistory = [];

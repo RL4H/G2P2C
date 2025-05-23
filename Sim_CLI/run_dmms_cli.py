@@ -1,3 +1,5 @@
+"""DMMS.R 시뮬레이터를 명령행에서 한 번 실행하기 위한 간단한 스크립트."""
+
 import argparse
 from pathlib import Path
 import subprocess
@@ -5,7 +7,7 @@ import pandas as pd
 
 
 def run_dmms(exe: Path, cfg: Path, log: Path, results_dir: Path) -> None:
-    """Run DMMS.R simulator once using CLI and print path to generated CSV files."""
+    """CLI 모드로 DMMS.R을 한 번 실행하고 결과 CSV 파일 경로를 출력한다."""
     exe = Path(exe)
     cfg = Path(cfg)
     log = Path(log)
@@ -39,6 +41,8 @@ def run_dmms(exe: Path, cfg: Path, log: Path, results_dir: Path) -> None:
 
 
 def main():
+    """커맨드라인 인자를 파싱하여 ``run_dmms`` 함수를 호출한다."""
+
     parser = argparse.ArgumentParser(description="Run DMMS.R via CLI")
     parser.add_argument("exe", type=Path, help="Path to DMMS.R executable")
     parser.add_argument("cfg", type=Path, help="Path to config XML")
