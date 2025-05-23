@@ -30,7 +30,7 @@ previous discussions.
 에피소드 종료 시점에 FastAPI 서버의 /episode_end(신규)로 POST 요청을 보내도록 함.
 필요 시 매 스텝마다 reward 계산에 필요한 정보를 /env_step으로 보낼 수 있도록 상태 전송 로직을 분리한다.
 
-### FastAPI 서버 기능 확장 (Sim_CLI/main.py)
+### FastAPI 서버 기능 확장 (Sim_CLI/main.py) - 완료
 
 lifespan()에서 학습용 버퍼와 에피소드 관리 변수를 초기화한다.
 /env_step
