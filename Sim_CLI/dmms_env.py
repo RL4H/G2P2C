@@ -4,9 +4,13 @@ from pathlib import Path
 from typing import Any
 from collections import namedtuple
 
+import logging
+
 import gym
 from gym import spaces
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class DmmsEnv(gym.Env):
@@ -108,6 +112,11 @@ class DmmsEnv(gym.Env):
 
     def close(self) -> None:
         if self.proc is not None:
+            try:
+                httpx.post(f"{self.server_url}/episode_end")
+            except Exception as exc:
+                logger.warning("Failed to notify episode end: %s", exc)
+
             if self.proc.poll() is None:
                 self.proc.terminate()
                 try:
