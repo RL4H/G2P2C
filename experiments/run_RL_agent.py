@@ -167,8 +167,23 @@ def main():
     random.seed(args.seed)
     np.random.seed(args.seed)
 
-    patients, env_ids = get_patient_env()  # note: left here so that type of subject can be selected.
-    agent.run(args, patients, env_ids, args.seed)
+    if args.sim == 'dmms':
+        from Sim_CLI.dmms_env import DmmsEnv
+        env = DmmsEnv(
+            server_url=args.dmms_server,
+            exe_path=args.dmms_exe,
+            cfg_path=args.dmms_cfg,
+            io_root=args.dmms_io,
+        )
+        obs = env.reset()
+        done = False
+        while not done:
+            action = env.action_space.sample()
+            obs, reward, done, _ = env.step(action)
+        env.close()
+    else:
+        patients, env_ids = get_patient_env()  # note: left here so that type of subject can be selected.
+        agent.run(args, patients, env_ids, args.seed)
 
 
 if __name__ == '__main__':
