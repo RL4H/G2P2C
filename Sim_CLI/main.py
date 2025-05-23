@@ -10,7 +10,7 @@ DMMS.R 에서 JavaScript 플러그인을 통해 호출되는 ``/predict_action``
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from contextlib import asynccontextmanager
 import numpy as np
 import torch
@@ -132,6 +132,21 @@ class StateRequest(BaseModel):
 
 class ActionResponse(BaseModel):
     insulin_action_U_per_h: float = Field(..., description="0.0~5.0 U/h 사이의 실수")
+
+
+class EnvStepRequest(BaseModel):
+    action: float = Field(..., description="insulin action in U/h")
+
+
+class EnvStepResponse(BaseModel):
+    cgm: float
+    reward: float
+    done: bool
+    info: Dict[str, Any] = {}
+
+
+class GetStateResponse(BaseModel):
+    cgm: Optional[float]
 
 
 def _handle_env_step(req: StateRequest, endpoint_name: str) -> ActionResponse:
@@ -259,16 +274,44 @@ app.add_middleware(
 )
 
 
+@app.get("/get_state", response_model=GetStateResponse)
+def get_state():
+    """Return the latest CGM value known to the server."""
+    return GetStateResponse(cgm=app_state.get("last_cgm"))
+
+
 @app.post("/predict_action", response_model=ActionResponse)
 def predict_action(req: StateRequest):
     """기존 호환성을 위한 엔드포인트. 내부적으로 /env_step 로직을 사용한다."""
     return _handle_env_step(req, "/predict_action")
 
 
-@app.post("/env_step", response_model=ActionResponse)
-def env_step(req: StateRequest):
-    """강화학습용 스텝 처리 엔드포인트."""
-    return _handle_env_step(req, "/env_step")
+@app.post("/env_step", response_model=EnvStepResponse)
+def env_step(req: EnvStepRequest):
+    """Return next state and reward after applying an action."""
+    app_state["api_call_counter"] = app_state.get("api_call_counter", 0) + 1
+    last_cgm = app_state.get("last_cgm", 110.0)
+    agent_args = app_state.get("agent_args_for_statespace")
+
+    next_cgm = float(last_cgm - req.action)
+    app_state["last_cgm"] = next_cgm
+
+    if agent_args is not None:
+        reward_val = float(composite_reward(agent_args, state=next_cgm))
+    else:
+        reward_val = 0.0
+
+    experience = {
+        "state": {"cgm": last_cgm},
+        "action": req.action,
+        "reward": reward_val,
+        "next_state": {"cgm": next_cgm},
+    }
+    app_state.setdefault("experience_buffer", []).append(experience)
+    app_state["prev_state"] = {"cgm": last_cgm}
+    app_state["prev_action"] = req.action
+
+    return EnvStepResponse(cgm=next_cgm, reward=reward_val, done=False, info={})
 
 
 
