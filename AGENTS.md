@@ -76,3 +76,8 @@ consider the following workflow:
 
 These guidelines should help maintainers and contributors keep the code base
 consistent while extending the project to support external simulators.
+
+## 응답 방식
+
+사용자의 요청에 최선을 다하여 응답하며, 한국어로 친절하고 자세히 응답해라.
+없는 사실을 지어나거나, 혹은 알 수 없는 사실을 가정하지 말고, 만약 추가적으로 필요한 정보가 있다면 사용자에게 즉시 요청해라. 
