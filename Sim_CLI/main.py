@@ -23,6 +23,7 @@ if str(_project_root) not in sys.path:
 
 from Sim_CLI.g2p2c_agent_api import load_agent, infer_action
 from utils.statespace import StateSpace
+from utils.reward_func import composite_reward
 
 # ----- CSV 로깅 설정 -----
 LOG_FILE_DIR = _project_root / "results" / "dmms_realtime_logs_v2" # 로그 저장 디렉토리 (이름 변경)
@@ -53,6 +54,10 @@ async def lifespan(app: FastAPI):
     print("INFO:     Application startup...")
     app_state["api_call_counter"] = 0 # API 호출 횟수 카운터 (t 스텝으로 사용)
     app_state["current_episode"] = 1   # 현재 에피소드 번호 (기본값)
+    app_state["experience_buffer"] = []  # 상태-행동-보상 저장용 버퍼
+    app_state["prev_state"] = None
+    app_state["prev_action"] = None
+    app_state["last_cgm"] = None
 
     try:
         LOG_FILE_DIR.mkdir(parents=True, exist_ok=True)
@@ -196,6 +201,28 @@ def predict_action(req: StateRequest):
             hc_state_processed=processed_hc_state_np
         )
 
+        # ----- 경험 버퍼 업데이트 -----
+        current_state_dict = {
+            "state_hist": processed_state_hist_np.tolist(),
+            "hc_state": processed_hc_state_np.flatten().tolist(),
+        }
+
+        prev_state = app_state.get("prev_state")
+        prev_action = app_state.get("prev_action")
+        if prev_state is not None and prev_action is not None:
+            reward_val = composite_reward(agent_args, state=current_cgm_raw)
+            experience = {
+                "state": prev_state,
+                "action": prev_action,
+                "reward": float(reward_val),
+                "next_state": current_state_dict,
+            }
+            app_state["experience_buffer"].append(experience)
+
+        app_state["prev_state"] = current_state_dict
+        app_state["prev_action"] = float(action_U_per_h)
+        app_state["last_cgm"] = float(current_cgm_raw)
+
         # !!! 위 수치가 인슐린 수치에 해당함. 
         # 아래는 디버깅 시 사용할 수 있는 코드.
         # action_U_per_h *= 0
@@ -250,4 +277,44 @@ def predict_action(req: StateRequest):
         print(f"\n!!! ERROR processing /predict_action !!!", file=sys.stderr)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Agent inference error: {str(e)}")
+
+
+class EpisodeEndResponse(BaseModel):
+    episode: int
+    steps: int
+
+
+@app.post("/episode_end", response_model=EpisodeEndResponse)
+def episode_end():
+    """Handle end of an episode and return collected experience."""
+    exp_buffer = app_state.get("experience_buffer", [])
+
+    prev_state = app_state.get("prev_state")
+    prev_action = app_state.get("prev_action")
+    if prev_state is not None and prev_action is not None:
+        last_cgm = app_state.get("last_cgm")
+        agent_args = app_state.get("agent_args_for_statespace")
+        if last_cgm is not None and agent_args is not None:
+            final_reward = composite_reward(agent_args, state=last_cgm)
+        else:
+            final_reward = 0.0
+        exp_buffer.append({
+            "state": prev_state,
+            "action": prev_action,
+            "reward": float(final_reward),
+            "next_state": None,
+        })
+
+    episode_num = app_state.get("current_episode", 1)
+    num_steps = len(exp_buffer)
+
+    # Reset episode-related states
+    app_state["experience_buffer"] = []
+    app_state["prev_state"] = None
+    app_state["prev_action"] = None
+    app_state["last_cgm"] = None
+    app_state["api_call_counter"] = 0
+    app_state["current_episode"] = episode_num + 1
+
+    return EpisodeEndResponse(episode=episode_num, steps=num_steps)
 
