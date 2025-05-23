@@ -30,6 +30,18 @@ class Options:
         self.parser.add_argument('--sensor', type=str, default='GuardianRT', help='Dexcom, GuardianRT, Navigator')
         self.parser.add_argument('--pump', type=str, default='Insulet', help='Insulet, Cozmo')
 
+        # dmms simulator selection
+        self.parser.add_argument('--sim', type=str, default='simglucose',
+                                 help='simglucose or dmms')
+        self.parser.add_argument('--dmms_server', type=str, default='http://localhost:8000',
+                                 help='FastAPI server URL for DMMS.R')
+        self.parser.add_argument('--dmms_exe', type=str, default='',
+                                 help='Path to DMMS.R executable')
+        self.parser.add_argument('--dmms_cfg', type=str, default='',
+                                 help='Path to DMMS.R config XML file')
+        self.parser.add_argument('--dmms_io', type=str, default='results/dmms_runs',
+                                 help='Directory for DMMS logs and results')
+
         # for training: # ideal benchmark adult and adolescent doesnt have snacks though => set prob '-1' to remove
         self.parser.add_argument('--meal_prob', type=list, default=[0.95, -1, 0.95, -1, 0.95, -1], help='')
         self.parser.add_argument('--meal_amount', type=list, default=[45, 30, 85, 30, 80, 30], help='')
