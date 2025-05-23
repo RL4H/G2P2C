@@ -6,6 +6,7 @@ import shutil
 import random
 import numpy as np
 import argparse
+from pathlib import Path
 from pprint import pprint
 from decouple import config
 MAIN_PATH = config('MAIN_PATH')
@@ -38,6 +39,18 @@ def copy_folder(src, dst):
     for folders, subfolders, filenames in os.walk(src):
         for filename in filenames:
             shutil.copy(os.path.join(folders, filename), dst)
+
+
+def setup_dmms_dirs(args):
+    """Create result directories for DMMS runs if they don't exist."""
+    paths = [
+        Path('results/dmms_experience'),
+        Path('results/dmms_realtime_logs'),
+        Path('results/dmms_realtime_logs_v2'),
+        Path(args.dmms_io),
+    ]
+    for p in paths:
+        p.mkdir(parents=True, exist_ok=True)
 
 
 def set_agent_parameters(args):
@@ -173,22 +186,10 @@ def main():
     np.random.seed(args.seed)
 
     if args.sim == 'dmms':
-        from Sim_CLI.dmms_env import DmmsEnv
-        env = DmmsEnv(
-            server_url=args.dmms_server,
-            exe_path=args.dmms_exe,
-            cfg_path=args.dmms_cfg,
-            io_root=args.dmms_io,
-        )
-        obs = env.reset()
-        done = False
-        while not done:
-            action = env.action_space.sample()
-            obs, reward, done, _ = env.step(action)
-        env.close()
-    else:
-        patients, env_ids = get_patient_env()  # note: left here so that type of subject can be selected.
-        agent.run(args, patients, env_ids, args.seed)
+        setup_dmms_dirs(args)
+
+    patients, env_ids = get_patient_env()  # note: left here so that type of subject can be selected.
+    agent.run(args, patients, env_ids, args.seed)
 
 
 if __name__ == '__main__':
