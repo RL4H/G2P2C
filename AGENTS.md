@@ -48,7 +48,7 @@ step(action)은 위의 /env_step API를 통해 한 스텝을 진행하고 다음
 close()에서 실행 중인 DMMS.R 프로세스를 종료한다.
 이 클래스는 기존 RL 알고리즘에서 사용되는 인터페이스(env.reset, env.step, env.close)를 그대로 제공한다.
 
-### 학습 루프 통합 - 완료 
+### 학습 루프 통합 - 완료
 
 experiments/run_RL_agent.py의 설정 로직을 참고하여 G2P2C 또는 PPO 알고리즘을 선택적으로 초기화한다.
 새로 구현한 DmmsEnv를 환경으로 사용하도록 옵션을 추가한다(--sim dmms).
