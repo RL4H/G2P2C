@@ -41,6 +41,11 @@ class Options:
                                  help='Path to DMMS.R config XML file')
         self.parser.add_argument('--dmms_io', type=str, default='results/dmms_runs',
                                  help='Directory for DMMS logs and results')
+        self.parser.add_argument('--pretrained_dir', type=str, default='',
+                                 help='Directory containing pretrained checkpoints')
+        self.parser.add_argument('--pretrained_episode', type=int, default=195,
+                                 help='Episode number of pretrained weights')
+
 
         # for training: # ideal benchmark adult and adolescent doesnt have snacks though => set prob '-1' to remove
         self.parser.add_argument('--meal_prob', type=list, default=[0.95, -1, 0.95, -1, 0.95, -1], help='')

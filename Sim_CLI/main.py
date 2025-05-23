@@ -187,6 +187,10 @@ def _handle_env_step(req: StateRequest, endpoint_name: str) -> ActionResponse:
             hc_state_processed=processed_hc_state_np,
         )
 
+        # 아래는 디버깅용 코드.
+        # 입력 인슐린 양을 조절할 수 있다.
+        # action_U_per_h *= 0
+
         current_state_dict = {
             "state_hist": processed_state_hist_np.tolist(),
             "hc_state": processed_hc_state_np.flatten().tolist(),

@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
 from typing import Any, Tuple
+from collections import namedtuple
 
 import gym
 from gym import spaces
@@ -11,6 +12,9 @@ class DmmsEnv(gym.Env):
     """Gym wrapper for interacting with DMMS.R via FastAPI."""
 
     metadata = {"render.modes": []}
+
+    Step = namedtuple("Step", ["observation", "reward", "done", "info"])
+    Observation = namedtuple("Observation", ["CGM"])
 
     def __init__(self, server_url: str, exe_path: str, cfg_path: str, io_root: str):
         super().__init__()
@@ -30,7 +34,7 @@ class DmmsEnv(gym.Env):
         cmd = [self.exe_path, self.cfg_path, str(log_file), str(results_dir)]
         self.proc = subprocess.Popen(cmd)
 
-    def reset(self) -> Any:
+    def reset(self) -> Step:
         self.close()
         self.episode_counter += 1
         self.results_dir = self.io_root / f"episode_{self.episode_counter}"
@@ -38,18 +42,22 @@ class DmmsEnv(gym.Env):
         self._start_process(self.results_dir)
         resp = httpx.get(f"{self.server_url}/get_state")
         resp.raise_for_status()
-        return resp.json()["obs"]
+        data = resp.json()
+        obs_val = data.get("cgm")
+        obs = self.Observation(CGM=obs_val)
+        return self.Step(observation=obs, reward=0.0, done=False, info={})
 
-    def step(self, action: Any) -> Tuple[Any, float, bool, dict]:
+    def step(self, action: Any) -> Step:
         payload = {"action": action}
         resp = httpx.post(f"{self.server_url}/env_step", json=payload)
         resp.raise_for_status()
         data = resp.json()
-        obs = data.get("obs")
+        obs_val = data.get("cgm")
         reward = data.get("reward", 0.0)
         done = data.get("done", False)
         info = data.get("info", {})
-        return obs, reward, done, info
+        obs = self.Observation(CGM=obs_val)
+        return self.Step(observation=obs, reward=reward, done=done, info=info)
 
     def close(self) -> None:
         if self.proc is not None:

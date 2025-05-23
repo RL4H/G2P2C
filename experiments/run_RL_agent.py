@@ -89,9 +89,14 @@ def set_agent_parameters(args):
         args.use_planning = 'yes'
         args = set_args(args)
         args = setup_folders(args)
-        weights = MAIN_PATH+'/results/ppo_lstm_12_testing/checkpoints/'
-        #agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
-        agent = G2P2C(args, device, False, '', '')
+        if args.pretrained_dir:
+            actor_p = os.path.join(args.pretrained_dir,
+                                   f"episode_{args.pretrained_episode}_Actor.pth")
+            critic_p = os.path.join(args.pretrained_dir,
+                                    f"episode_{args.pretrained_episode}_Critic.pth")
+            agent = G2P2C(args, device, True, actor_p, critic_p)
+        else:
+            agent = G2P2C(args, device, False, '', '')
         dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
         copy_folder(MAIN_PATH + '/agents/g2p2c', dst)
 
