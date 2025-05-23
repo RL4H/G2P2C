@@ -196,7 +196,8 @@ def predict_action(req: StateRequest):
             hc_state_processed=processed_hc_state_np
         )
 
-        ## !!! 위 수치가 인슐린 수치에 해당함. 
+        # !!! 위 수치가 인슐린 수치에 해당함. 
+        # 아래는 디버깅 시 사용할 수 있는 코드.
         # action_U_per_h *= 0
 
         print(f"INFO:     [LOG_MAIN_FINAL_ACTION_FROM_API] Action from infer_action (to be returned to JS): {action_U_per_h:.4f} U/h")

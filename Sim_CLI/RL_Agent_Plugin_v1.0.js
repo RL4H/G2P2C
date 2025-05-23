@@ -12,14 +12,14 @@ var AGENT_COMMUNICATION_METHOD = 'WEB_SERVICE'; // 웹 서비스 방식 사용
 var AGENT_API_URL = "http://127.0.0.1:5000"; // FastAPI 서버 주소
 var WEB_REQUEST_TIMEOUT_MS = 5000; // 웹 서비스 타임아웃 (밀리초)
 
-var INSULIN_NAME_DEFINED_IN_DMMS = "PPO_Agent_Insulin"; // DMMS.R 'Insulin Definitions'에서 정의한 이름 - ** 확인 필요 **
-var INSULIN_TARGET_KEY = "sqCustomInsulin1"; // ** 사용자가 정의한 순서에 따라 sqCustomInsulin2 등이 될 수 있음. 확인 필요! **
+var INSULIN_NAME_DEFINED_IN_DMMS = "PPO_Agent_Insulin"; // DMMS.R 'Insulin Definitions'에서 정의한 이름 
+var INSULIN_TARGET_KEY = "sqCustomInsulin1"; // ** 사용자가 정의한 순서에 따라 sqCustomInsulin2 등이 될 수 있음. 
 var FALLBACK_INSULIN_KEY = "sqInsulinNormalBolus"; // sqCustomInsulinX 키 실패 시 사용할 표준 볼루스 키
 
 var PMOL_PER_UNIT = 6000.0;
 var FEATURE_HISTORY_LENGTH = 12; // Represents 12 * 5-minute intervals = 60 minutes
 var ACTION_MIN_U_PER_H = 0.0;
-var ACTION_MAX_U_PER_H = 5.0; // 명세서에 따라 최대값 조정 필요 시 변경
+var ACTION_MAX_U_PER_H = 5.0; 
 var USE_FEAT_VECTOR = false; // 추가 특징 벡터 사용 여부 - G2P2C는 정규화된 시간을 사용 (hour로 전달)
 
 // --- 전역 변수 (상태 관리용) ---
