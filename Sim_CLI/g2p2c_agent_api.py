@@ -1,4 +1,10 @@
-# Sim_CLI/g2p2c_agent_api.py
+"""G2P2C 에이전트를 로드하고 추론을 수행하기 위한 보조 모듈.
+
+이 모듈은 ``load_agent`` 와 ``infer_action`` 두 함수를 제공한다. ``load_agent``
+는 저장된 체크포인트 파일들을 읽어 ``G2P2C`` 객체를 생성하며, ``infer_action``
+은 전처리된 상태 이력을 입력 받아 인슐린 주입률(U/h)을 반환한다. DMMS.R과
+FastAPI 서버 사이의 브릿지 역할을 하는 코드다.
+"""
 
 import os
 import sys
@@ -32,6 +38,22 @@ def load_agent(
     device: Optional[torch.device] = None,
     episode: Optional[int] = None,
 ) -> G2P2C:
+    """저장된 체크포인트로부터 G2P2C 모델을 로드한다.
+
+    Parameters
+    ----------
+    device : torch.device, optional
+        모델을 로드할 디바이스. 주어지지 않으면 CPU 사용.
+    episode : int, optional
+        특정 에피소드 번호의 체크포인트를 불러오고자 할 때 사용. 생략하면
+        가장 최신의 에피소드를 자동으로 선택한다.
+
+    Returns
+    -------
+    G2P2C
+        로드된 에이전트 인스턴스.
+    """
+
     args_json_path = (_project_root / _DEFAULT_ARGS_JSON_REL_PATH).resolve()
     params_py_path = (_project_root / _DEFAULT_PARAMS_PY_REL_PATH).resolve()
     checkpoints_dir_abs = (_project_root / _DEFAULT_CHECKPOINTS_REL_DIR).resolve()
@@ -122,6 +144,23 @@ def infer_action(
     state_hist_processed: np.ndarray, # StateSpace를 거친 정규화된 상태 이력
     hc_state_processed: np.ndarray,   # StateSpace를 거친 정규화된 핸드크래프트 특징
 ) -> float:
+    """전처리된 상태를 이용해 에이전트로부터 인슐린 주입률을 추론한다.
+
+    Parameters
+    ----------
+    agent : G2P2C
+        로드된 G2P2C 에이전트 인스턴스.
+    state_hist_processed : np.ndarray
+        ``StateSpace`` 로 전처리된 상태 이력 (``feature_history`` × ``n_features``).
+    hc_state_processed : np.ndarray
+        전처리된 핸드크래프트 특징 벡터.
+
+    Returns
+    -------
+    float
+        클리핑된 인슐린 주입률(U/h).
+    """
+
     # 1. 입력 유효성 검증 (StateSpace를 거쳤으므로, 기본적인 타입 및 형태 위주)
     if not isinstance(state_hist_processed, np.ndarray):
         raise TypeError(f'state_hist_processed must be np.ndarray, got {type(state_hist_processed)}')
