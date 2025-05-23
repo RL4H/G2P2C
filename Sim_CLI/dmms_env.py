@@ -44,8 +44,20 @@ class DmmsEnv(gym.Env):
         resp.raise_for_status()
         data = resp.json()
         obs_val = data.get("cgm")
+        info = data.get("info", {})
+        default_info = {
+            "sample_time": 1,
+            "future_carb": 0,
+            "remaining_time": 0,
+            "day_hour": 0,
+            "day_min": 0,
+            "meal_type": 0,
+            "meal": 0,
+        }
+        if isinstance(info, dict):
+            default_info.update(info)
         obs = self.Observation(CGM=obs_val)
-        return self.Step(observation=obs, reward=0.0, done=False, info={})
+        return self.Step(observation=obs, reward=0.0, done=False, info=default_info)
 
     def step(self, action: Any) -> Step:
         payload = {"action": action}
@@ -56,8 +68,19 @@ class DmmsEnv(gym.Env):
         reward = data.get("reward", 0.0)
         done = data.get("done", False)
         info = data.get("info", {})
+        default_info = {
+            "sample_time": 1,
+            "future_carb": 0,
+            "remaining_time": 0,
+            "day_hour": 0,
+            "day_min": 0,
+            "meal_type": 0,
+            "meal": 0,
+        }
+        if isinstance(info, dict):
+            default_info.update(info)
         obs = self.Observation(CGM=obs_val)
-        return self.Step(observation=obs, reward=reward, done=done, info=info)
+        return self.Step(observation=obs, reward=reward, done=done, info=default_info)
 
     def close(self) -> None:
         if self.proc is not None:
