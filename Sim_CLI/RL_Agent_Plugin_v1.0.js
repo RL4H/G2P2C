@@ -182,7 +182,7 @@ function runIteration(subjObject, sensorSigArray, nextMealObject, nextExerciseOb
         try {
             var requestBody = JSON.stringify(agentState);
             var contentType = "application/json";
-            var success = httpWebServiceInvoker.performPostRequest(AGENT_API_URL + "/predict_action", requestBody, contentType, WEB_REQUEST_TIMEOUT_MS);
+            var success = httpWebServiceInvoker.performPostRequest(AGENT_API_URL + "/env_step", requestBody, contentType, WEB_REQUEST_TIMEOUT_MS);
 
             if (success && !httpWebServiceInvoker.timeout() && httpWebServiceInvoker.responseStatusCode() >= 200 && httpWebServiceInvoker.responseStatusCode() < 300) {
                 var responseBody = httpWebServiceInvoker.responseBody();

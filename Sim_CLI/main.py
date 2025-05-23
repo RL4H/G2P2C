@@ -36,6 +36,7 @@ from utils.reward_func import composite_reward
 LOG_FILE_DIR = _project_root / "results" / "dmms_realtime_logs_v2" # 로그 저장 디렉토리 (이름 변경)
 LOG_FILE_NAME = "dmms_to_simglucose_log_v2.csv"
 LOG_FILE_PATH = LOG_FILE_DIR / LOG_FILE_NAME
+EXPERIENCE_DIR = _project_root / "results" / "dmms_experience"
 
 SimglucoseLogHeader = [
     'epi', 't', 'cgm', 'meal', 'ins', 'rew', 'rl_ins',
@@ -132,55 +133,34 @@ class StateRequest(BaseModel):
 class ActionResponse(BaseModel):
     insulin_action_U_per_h: float = Field(..., description="0.0~5.0 U/h 사이의 실수")
 
-app = FastAPI(title="G2P2C Agent API with Realtime Simglucose-like Logging (v2)", lifespan=lifespan)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.post("/predict_action", response_model=ActionResponse)
-def predict_action(req: StateRequest):
-    """에이전트에게 상태를 전달하고 인슐린 주입률을 응답받는 엔드포인트."""
+def _handle_env_step(req: StateRequest, endpoint_name: str) -> ActionResponse:
+    """공통 스텝 로직을 수행하고 다음 행동을 반환한다."""
     agent = app_state.get("agent")
     state_space = app_state.get("state_space_instance")
     agent_args = app_state.get("agent_args_for_statespace")
 
-    # API 호출 카운터 증가 (이것을 't' 스텝으로 사용)
     app_state["api_call_counter"] = app_state.get("api_call_counter", 0) + 1
-    current_t_step = app_state["api_call_counter"] - 1 # 0부터 시작하는 스텝
+    current_t_step = app_state["api_call_counter"] - 1
 
-    # --- 이전 로그 로직은 유지 ---
     try:
         request_body_for_log = json.dumps(format_log_data(req.dict()))
     except Exception:
         request_body_for_log = str(req.dict())
-    print(f"INFO:     [LOG_MAIN_REQUEST_START] Call #{current_t_step}. Received /predict_action. Body: {request_body_for_log}")
-    # ----------------------------
+    print(f"INFO:     [LOG_MAIN_REQUEST_START] Call #{current_t_step}. Received {endpoint_name}. Body: {request_body_for_log}")
 
     if not agent or not state_space or not agent_args:
         print("ERROR:    [LOG_MAIN] Agent, StateSpace, or agent_args not loaded properly.", file=sys.stderr)
         raise HTTPException(status_code=500, detail="Agent, StateSpace, or agent_args not loaded.")
 
     try:
-        if not req.history or len(req.history[-1]) != 2 :
+        if not req.history or len(req.history[-1]) != 2:
             raise ValueError(f"Invalid 'history' format. Last element: {req.history[-1] if req.history else 'N/A'}")
-        
+
         current_cgm_raw = req.history[-1][0]
         previous_insulin_action_raw = req.history[-1][1]
-                # 시간 정보는 서버에서 생성: API 호출 순서(current_t_step)를 그대로 사용
         generated_hour = current_t_step
         current_meal_raw = req.meal if req.meal is not None else 0.0
-
-        print(
-            f"INFO:     [LOG_MAIN_RAW_INPUTS_TO_STATESPACE] Raw inputs for StateSpace.update(): "
-            f"cgm={current_cgm_raw:.2f}, ins(prev_action)={previous_insulin_action_raw:.4f}, "
-            f"hour_generated={generated_hour:.1f}, t_step_for_state={current_t_step}, "
-            f"meal={current_meal_raw:.1f}"
-        )
 
         if not (
             np.isfinite(current_cgm_raw)
@@ -188,7 +168,7 @@ def predict_action(req: StateRequest):
             and np.isfinite(generated_hour)
             and np.isfinite(current_meal_raw)
         ):
-            raise ValueError(f"NaN/Inf in raw inputs.")
+            raise ValueError("NaN/Inf in raw inputs.")
 
         processed_state_hist_np, processed_hc_state_list = state_space.update(
             cgm=current_cgm_raw,
@@ -196,26 +176,17 @@ def predict_action(req: StateRequest):
             meal=current_meal_raw,
             hour=current_t_step,
             meal_type=0,
-            carbs=0      
+            carbs=0,
         )
-        
-        print(f"INFO:     [LOG_MAIN_STATESPACE_OUTPUT] StateSpace.update() returned: \n"
-              f"           processed_state_hist_np (shape {processed_state_hist_np.shape}, last 2 rows):\n{format_log_data(processed_state_hist_np[-2:])}\n"
-              f"           processed_hc_state_list: {format_log_data(processed_hc_state_list)}")
-        
-        processed_hc_state_np = np.array(processed_hc_state_list, dtype=np.float32).reshape(1, agent_args.n_handcrafted_features)
 
-        print(f"INFO:     [LOG_MAIN_INPUTS_TO_INFER_ACTION] Inputs to infer_action():\n"
-              f"           state_hist_processed (shape {processed_state_hist_np.shape}, last 2 rows):\n{format_log_data(processed_state_hist_np[-2:])}\n"
-              f"           hc_state_processed (shape {processed_hc_state_np.shape}): {format_log_data(processed_hc_state_np)}")
+        processed_hc_state_np = np.array(processed_hc_state_list, dtype=np.float32).reshape(1, agent_args.n_handcrafted_features)
 
         action_U_per_h = infer_action(
             agent=agent,
             state_hist_processed=processed_state_hist_np,
-            hc_state_processed=processed_hc_state_np
+            hc_state_processed=processed_hc_state_np,
         )
 
-        # ----- 경험 버퍼 업데이트 -----
         current_state_dict = {
             "state_hist": processed_state_hist_np.tolist(),
             "hc_state": processed_hc_state_np.flatten().tolist(),
@@ -237,23 +208,13 @@ def predict_action(req: StateRequest):
         app_state["prev_action"] = float(action_U_per_h)
         app_state["last_cgm"] = float(current_cgm_raw)
 
-        # !!! 위 수치가 인슐린 수치에 해당함. 
-        # 아래는 디버깅 시 사용할 수 있는 코드.
-        # action_U_per_h *= 0
-
-        print(f"INFO:     [LOG_MAIN_FINAL_ACTION_FROM_API] Action from infer_action (to be returned to JS): {action_U_per_h:.4f} U/h")
-
-        # --- Simglucose 형식 로그 기록 ---
         try:
-            # 'day_min' 계산: current_t_step (5분 간격 스텝)을 사용하여 시간(분)으로 변환 후 60으로 나눈 나머지
-            # JavaScript가 5분마다 API를 호출한다고 가정.
-            # 예: t_step=0 -> 0분, t_step=1 -> 5분, t_step=11 -> 55분, t_step=12 -> 60분(다음 시간 0분)
             calculated_total_minutes = current_t_step * 5
             day_min_for_log = calculated_total_minutes % 60
 
             log_row_dict = {
-                'epi': app_state.get("current_episode", 1), # 현재 에피소드 번호 사용
-                't': current_t_step, # API 호출 기반 5분 간격 스텝
+                'epi': app_state.get("current_episode", 1),
+                't': current_t_step,
                 'cgm': current_cgm_raw,
                 'meal': current_meal_raw,
                 'ins': action_U_per_h,
@@ -263,34 +224,48 @@ def predict_action(req: StateRequest):
                 'sigma': np.nan,
                 'prob': np.nan,
                 'state_val': np.nan,
-                'day_hour': int(generated_hour),  # 서버에서 생성한 시간 정보
-                'day_min': day_min_for_log
+                'day_hour': int(generated_hour),
+                'day_min': day_min_for_log,
             }
             with open(LOG_FILE_PATH, 'a', newline='') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=SimglucoseLogHeader)
                 writer.writerow(log_row_dict)
-            print(
-                f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: "
-                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, generated_hour={generated_hour})"
-            )
-            print(
-                f"INFO:     [LOG_MAIN_CSV_WRITE] Successfully wrote to {LOG_FILE_PATH}: "
-                f"(epi={log_row_dict['epi']}, t_step={log_row_dict['t']}, generated_hour={generated_hour})"
-            )
         except Exception as csv_e:
             print(f"ERROR:    [LOG_MAIN_CSV_WRITE] Failed to write Simglucose format log: {csv_e}", file=sys.stderr)
-        # ---------------------------------
 
         return ActionResponse(insulin_action_U_per_h=action_U_per_h)
 
     except ValueError as ve:
-        print(f"\n!!! ValueError processing /predict_action: {ve} !!!", file=sys.stderr)
+        print(f"\n!!! ValueError processing {endpoint_name}: {ve} !!!", file=sys.stderr)
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Input validation error: {str(ve)}")
     except Exception as e:
-        print(f"\n!!! ERROR processing /predict_action !!!", file=sys.stderr)
+        print(f"\n!!! ERROR processing {endpoint_name} !!!", file=sys.stderr)
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Agent inference error: {str(e)}")
+
+app = FastAPI(title="G2P2C Agent API with Realtime Simglucose-like Logging (v2)", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.post("/predict_action", response_model=ActionResponse)
+def predict_action(req: StateRequest):
+    """기존 호환성을 위한 엔드포인트. 내부적으로 /env_step 로직을 사용한다."""
+    return _handle_env_step(req, "/predict_action")
+
+
+@app.post("/env_step", response_model=ActionResponse)
+def env_step(req: StateRequest):
+    """강화학습용 스텝 처리 엔드포인트."""
+    return _handle_env_step(req, "/env_step")
+
 
 
 class EpisodeEndResponse(BaseModel):
@@ -321,6 +296,14 @@ def episode_end():
 
     episode_num = app_state.get("current_episode", 1)
     num_steps = len(exp_buffer)
+
+    try:
+        EXPERIENCE_DIR.mkdir(parents=True, exist_ok=True)
+        exp_path = EXPERIENCE_DIR / f"episode_{episode_num}.json"
+        with open(exp_path, "w") as f:
+            json.dump(exp_buffer, f)
+    except Exception as exp_e:
+        print(f"ERROR:    [EPISODE_END] Failed to save experience buffer: {exp_e}", file=sys.stderr)
 
     # Reset episode-related states
     app_state["experience_buffer"] = []
