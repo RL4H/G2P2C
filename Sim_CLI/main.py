@@ -267,16 +267,6 @@ def env_step(req: StateRequest):
     return _handle_env_step(req, "/env_step")
 
 
-class StateResponse(BaseModel):
-    cgm: Optional[float] = None
-
-
-@app.get("/get_state", response_model=StateResponse)
-def get_state():
-    """Return the latest CGM value stored on the server."""
-    return StateResponse(cgm=app_state.get("last_cgm"))
-
-
 
 class EpisodeEndResponse(BaseModel):
     episode: int

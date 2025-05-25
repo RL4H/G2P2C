@@ -40,14 +40,6 @@ def copy_folder(src, dst):
             shutil.copy(os.path.join(folders, filename), dst)
 
 
-def setup_dmms_dirs(args):
-    """Create directories for DMMS-based training runs."""
-    dmms_root = Path(args.main_dir) / "results" / "dmms_runs"
-    dmms_root.mkdir(parents=True, exist_ok=True)
-    args.dmms_io_root = str(dmms_root)
-    return args
-
-
 def set_agent_parameters(args):
     agent = None
     device = args.device
@@ -161,9 +153,6 @@ def set_agent_parameters(args):
 def main():
     args = Options().parse()
     args, agent, device = set_agent_parameters(args)
-
-    if args.sim == 'dmms':
-        args = setup_dmms_dirs(args)
 
     with open(args.experiment_dir + '/args.json', 'w') as fp:
         json.dump(vars(args), fp, indent=4)
