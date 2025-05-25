@@ -4,3 +4,5 @@
 14:48:09  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
     Cannot save data to the currently specified results directory (/results_test)
         A csv file to be overwritten in that directory may be open in another program.
+22:40:40  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+22:43:56  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
