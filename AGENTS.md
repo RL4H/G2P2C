@@ -69,8 +69,16 @@ results/dmms_realtime_logs_v2에 남는 CSV 로그를 활용해 실제 DMMS.R �
   `RL_Agent_Plugin_v1.0.js`가 매 5분마다 서버의 `/env_step`으로 상태를 전송하고 시뮬레이션 종료 시 `/episode_end`로 알리도록 수정하였다.
 - **3단계: FastAPI 서버 기능 확장**  
   `main.py`에서 경험 버퍼와 에피소드 변수를 초기화하고, `/env_step`과 `/episode_end`에서 보상 계산과 버퍼 저장을 처리한다. 기본 동작은 구현되었으며 추가 테스트를 진행 중이다.
-- **테스트 환경 개선**  
+- **테스트 환경 개선**
   테스트 파일의 모듈 임포트를 절대경로로 수정하고 `httpx` 의존성을 추가하여 `pytest`를 실행할 수 있게 했다.
+
+- **4단계: Gym 환경 래퍼 구현 및 통합**
+  `Sim_CLI/dmms_env.py`에 `DmmsEnv` 클래스를 새로 작성하여 DMMS.R 프로세스를 시작하고
+  `/get_state`, `/env_step` API를 통해 상태와 보상을 주고받도록 했다.
+  FastAPI 서버(`main.py`)에는 `/get_state` 엔드포인트를 추가하였다.
+  `utils.options`에 `--sim dmms` 옵션과 DMMS 경로 인자를 신설하고,
+  `utils.core.get_env()`가 이 옵션에 따라 `DmmsEnv`를 반환하도록 수정하였다.
+  학습 스크립트(`experiments/run_RL_agent.py`)는 DMMS 모드일 때 결과 폴더를 생성하도록 `setup_dmms_dirs`를 호출한다.
 
 앞으로 DMMS.R과 연동하는 Gym 환경 클래스와 학습 루프 통합 작업을 진행할 예정이다.
 
