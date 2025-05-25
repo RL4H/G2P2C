@@ -2,6 +2,7 @@ import math
 import pandas as pd
 import pkg_resources
 from agents.std_bb.BBController import BasalBolusController
+from utils.core import get_cgm_value
 
 CONTROL_QUEST = pkg_resources.resource_filename('simglucose', 'params/Quest.csv')
 PATIENT_PARA_FILE = pkg_resources.resource_filename('simglucose', 'params/vpatient_params.csv')
@@ -30,7 +31,8 @@ class Pump:
         self.init_state = init_state
         if self.use_bolus:
             self.expert = BasalBolusController(self.args, patient_name=self.patient_name, use_bolus=self.use_bolus, use_cf=self.use_cf)
-            self.bolus = self.expert.get_bolus(meal=0, glucose=self.init_state.CGM)
+            init_cgm = get_cgm_value(self.init_state)
+            self.bolus = self.expert.get_bolus(meal=0, glucose=init_cgm)
         else:
             self.bolus = 0
 
@@ -45,7 +47,7 @@ class Pump:
             bolus_carbs = info['future_carb']
         else:
             bolus_carbs = 0
-        self.bolus = self.expert.get_bolus(meal=bolus_carbs, glucose=state.CGM)
+        self.bolus = self.expert.get_bolus(meal=bolus_carbs, glucose=get_cgm_value(state))
 
     def action(self, agent_action=None, prev_state=None, prev_info=None):
         if self.use_bolus:

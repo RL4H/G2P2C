@@ -38,6 +38,16 @@ class StateSpace:
             self.state = np.stack((self.glucose, self.insulin, self.meal_announcement_arr), axis=-1).astype(np.float32)
 
     def update(self, cgm=0, ins=0, meal=0, hour=0, meal_type=0, carbs=0):
+        # Some simulators may return ``None`` for CGM when the sensor fails.
+        # In that case reuse the last valid reading if available.
+        if cgm is None:
+            prev_scaled = self.glucose[-1]
+            if all(v == 0 for v in self.glucose):
+                # deque still at initial zero state; fallback to midpoint
+                prev_raw = (self.glucose_max + self.glucose_min) / 2
+            else:
+                prev_raw = core.inverse_linear_scaling(prev_scaled, self.glucose_min, self.glucose_max)
+            cgm = float(prev_raw)
         cgm = core.linear_scaling(x=cgm, x_min=self.glucose_min, x_max=self.glucose_max)
         ins = core.linear_scaling(x=ins, x_min=self.insulin_min, x_max=self.insulin_max)
         hour = core.linear_scaling(x=hour, x_min=0, x_max=312)  # hour is given 0-23

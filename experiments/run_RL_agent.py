@@ -6,6 +6,7 @@ import shutil
 import random
 import numpy as np
 import argparse
+from pathlib import Path
 from pprint import pprint
 from decouple import config
 MAIN_PATH = config('MAIN_PATH')
@@ -38,6 +39,18 @@ def copy_folder(src, dst):
     for folders, subfolders, filenames in os.walk(src):
         for filename in filenames:
             shutil.copy(os.path.join(folders, filename), dst)
+
+
+def setup_dmms_dirs(args):
+    """Create result directories for DMMS runs if they don't exist."""
+    paths = [
+        Path('results/dmms_experience'),
+        Path('results/dmms_realtime_logs'),
+        Path('results/dmms_realtime_logs_v2'),
+        Path(args.dmms_io),
+    ]
+    for p in paths:
+        p.mkdir(parents=True, exist_ok=True)
 
 
 def set_agent_parameters(args):
@@ -89,9 +102,14 @@ def set_agent_parameters(args):
         args.use_planning = 'yes'
         args = set_args(args)
         args = setup_folders(args)
-        weights = MAIN_PATH+'/results/ppo_lstm_12_testing/checkpoints/'
-        #agent = PPO(args, device, True, weights+'episode_379_Actor.pth', weights+'episode_379_Critic.pth')
-        agent = G2P2C(args, device, False, '', '')
+        if args.pretrained_dir:
+            actor_p = os.path.join(args.pretrained_dir,
+                                   f"episode_{args.pretrained_episode}_Actor.pth")
+            critic_p = os.path.join(args.pretrained_dir,
+                                    f"episode_{args.pretrained_episode}_Critic.pth")
+            agent = G2P2C(args, device, True, actor_p, critic_p)
+        else:
+            agent = G2P2C(args, device, False, '', '')
         dst = MAIN_PATH + '/results/' + args.folder_id + '/code'
         copy_folder(MAIN_PATH + '/agents/g2p2c', dst)
 
@@ -166,6 +184,9 @@ def main():
     torch.manual_seed(args.seed)
     random.seed(args.seed)
     np.random.seed(args.seed)
+
+    if args.sim == 'dmms':
+        setup_dmms_dirs(args)
 
     patients, env_ids = get_patient_env()  # note: left here so that type of subject can be selected.
     agent.run(args, patients, env_ids, args.seed)

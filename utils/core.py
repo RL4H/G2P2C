@@ -9,21 +9,32 @@ import torch
 
 
 def get_env(args, patient_name='adult#001', env_id='simglucose-adult1-v0', custom_reward=None, seed=None):
-    register(
-        id=env_id,
-        entry_point='utils.extended_T1DSimEnv:T1DSimEnv',  # simglucose.envs:T1DSimEnv
-        kwargs={'patient_name': patient_name,
-                'reward_fun': custom_reward,
-                'seed':seed,
-                'args': args}
-    )
-    env = gym.make(env_id)
-    env_conditions = {'insulin_min': env.action_space.low, 'insulin_max': env.action_space.high,
-                      'cgm_low': env.observation_space.low, 'cgm_high': env.observation_space.high}
-    logging.info(env_conditions)
-    # print("Experiment running for {}, creating env {}.".format(patient_name, env_id))
-    # print(env.observation_space.shape[0], env.observation_space.shape[1])
-    return env
+    if getattr(args, 'sim', 'simglucose') == 'dmms':
+        from Sim_CLI.dmms_env import DmmsEnv
+        return DmmsEnv(
+            server_url=args.dmms_server,
+            exe_path=args.dmms_exe,
+            cfg_path=args.dmms_cfg,
+            io_root=args.dmms_io,
+        )
+    else:
+        register(
+            id=env_id,
+            entry_point='utils.extended_T1DSimEnv:T1DSimEnv',
+            kwargs={'patient_name': patient_name,
+                    'reward_fun': custom_reward,
+                    'seed': seed,
+                    'args': args}
+        )
+        env = gym.make(env_id)
+        env_conditions = {
+            'insulin_min': env.action_space.low,
+            'insulin_max': env.action_space.high,
+            'cgm_low': env.observation_space.low,
+            'cgm_high': env.observation_space.high,
+        }
+        logging.info(env_conditions)
+        return env
 
 
 def get_patient_env():
@@ -173,7 +184,6 @@ def inverse_linear_scaling(y, x_min, x_max):
     # scale back to original
     x = (y+1) * (x_max - x_min) * (1/2) + x_min
     return x
-
 
 def reverse_kl_approx(p, q):
     # https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/ppo/ppo.py

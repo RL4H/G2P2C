@@ -1,5 +1,6 @@
 import argparse
 from decouple import config
+import sys
 MAIN_PATH = config('MAIN_PATH')
 
 
@@ -28,6 +29,23 @@ class Options:
                                  help='patient_id = [adolescent child adults] hence 0 - 9 indexes adolescents likewise')
         self.parser.add_argument('--sensor', type=str, default='GuardianRT', help='Dexcom, GuardianRT, Navigator')
         self.parser.add_argument('--pump', type=str, default='Insulet', help='Insulet, Cozmo')
+
+        # dmms simulator selection
+        self.parser.add_argument('--sim', type=str, default='simglucose',
+                                 help='simglucose or dmms')
+        self.parser.add_argument('--dmms_server', type=str, default='http://localhost:8000',
+                                 help='FastAPI server URL for DMMS.R')
+        self.parser.add_argument('--dmms_exe', type=str, default='',
+                                 help='Path to DMMS.R executable')
+        self.parser.add_argument('--dmms_cfg', type=str, default='',
+                                 help='Path to DMMS.R config XML file')
+        self.parser.add_argument('--dmms_io', type=str, default='results/dmms_runs',
+                                 help='Directory for DMMS logs and results')
+        self.parser.add_argument('--pretrained_dir', type=str, default='',
+                                 help='Directory containing pretrained checkpoints')
+        self.parser.add_argument('--pretrained_episode', type=int, default=195,
+                                 help='Episode number of pretrained weights')
+
 
         # for training: # ideal benchmark adult and adolescent doesnt have snacks though => set prob '-1' to remove
         self.parser.add_argument('--meal_prob', type=list, default=[0.95, -1, 0.95, -1, 0.95, -1], help='')
@@ -175,9 +193,21 @@ class Options:
         # Elena paper meal: Breakfast 30-60g, Lunch 70-100g, Dinner 70-110g, Snack 20-40g
         # June9 exp run: Breakfast 45 (10), Lunch 100 (10, Dinner 90 (1), Snack 10(5)
 
-    def parse(self):
+
+    # parse 메소드 시그니처 변경: args_list=None 추가
+    def parse(self, args_list=None):
         self._initial()
-        self.opt = self.parser.parse_args()
+
+        # args_list가 명시적으로 주어졌는지 확인
+        if args_list is not None:
+            # 주어졌다면 (빈 리스트 포함), 해당 리스트로 파싱
+            args_to_parse = args_list
+        else:
+            # 주어지지 않았다면 (기본값 None), 기존처럼 sys.argv 사용
+            # (주의: 이 경우에도 pytest 등 다른 환경 고려가 필요하다면 추가 조건 가능)
+            args_to_parse = sys.argv[1:]
+
+        self.opt = self.parser.parse_args(args_to_parse) # 결정된 인자 리스트로 파싱
         Options.validate_args(self.opt)
         return self.opt
 

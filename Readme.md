@@ -91,6 +91,16 @@ cd experiments
 python run_RL_agent.py --agent g2p2c --folder_id test --patient_id 0 --return_type average --action_type exponential --device cpu --seed 3 --debug 0
 ```
 
+### Training with DMMS.R
+
+To train using the external **DMMS.R** simulator start the FastAPI server and run the RL script with `--sim dmms`.
+Mandatory arguments are the DMMS executable and configuration paths:
+
+```
+cd experiments
+python run_RL_agent.py --sim dmms --dmms_exe /path/DMMS.R.exe --dmms_cfg /path/Sim_CLI.xml --agent g2p2c
+```
+
 
 
 <h4>Running Experiments</h4>
