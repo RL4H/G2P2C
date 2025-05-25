@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from collections import deque
 from utils.pumpAction import Pump
-from utils.core import get_env, time_in_range, custom_reward, combined_shape, linear_scaling, inverse_linear_scaling
+from utils.core import get_env, time_in_range, custom_reward, combined_shape, linear_scaling, inverse_linear_scaling, get_cgm_value
 from agents.g2p2c.core import Memory, BGPredBuffer, CGPredHorizon
 from utils.statespace import StateSpace
 from utils.reward_func import composite_reward
@@ -45,7 +45,7 @@ class Worker:
             self.episode += 1
         self.counter = 0
         self.init_state = self.env.reset()
-        self.cur_state, self.feat = self.state_space.update(cgm=self.init_state.CGM, ins=0, meal=0)
+        self.cur_state, self.feat = self.state_space.update(cgm=get_cgm_value(self.init_state), ins=0, meal=0)
         self.pump.calibrate(self.init_state)
         self.calibration_process()
 
@@ -53,8 +53,8 @@ class Worker:
         self.reinit_flag, cur_cgm = False, 0
         for t in range(0, self.calibration):  # open-loop simulation for calibration period.
             state, reward, is_done, info = self.env.step(self.std_basal)
-            cur_cgm = state.CGM
-            self.cur_state, self.feat = self.state_space.update(cgm=state.CGM, ins=self.std_basal,
+            cur_cgm = get_cgm_value(state)
+            self.cur_state, self.feat = self.state_space.update(cgm=get_cgm_value(state), ins=self.std_basal,
                                                                 meal=info['remaining_time'], hour=self.counter,
                                                                 meal_type=info['meal_type'])  # info['day_hour']
             self.reinit_flag = True if info['meal_type'] != 0 else False  # meal_type zero -> no meal
@@ -78,31 +78,31 @@ class Worker:
             rl_action, pump_action = self.pump.action(agent_action=selected_action,
                                                       prev_state=self.init_state, prev_info=None)
             state, _reward, is_done, info = self.env.step(pump_action)
-            reward = composite_reward(self.args, state=state.CGM, reward=_reward)
-            self.bgp_buffer.update(policy_step['a_cgm'], policy_step['c_cgm'], state.CGM)
+            cgm_val = get_cgm_value(state)
+            reward = composite_reward(self.args, state=cgm_val, reward=_reward)
+            self.bgp_buffer.update(policy_step['a_cgm'], policy_step['c_cgm'], cgm_val)
             # calulate the horison pred error rmse
             horizon_calc_done, err = self.CGPredHorizon.update(self.cur_state, self.feat, policy_step['action'][0],
-                                                               state.CGM, policy)
+                                                               cgm_val, policy)
             if horizon_calc_done:
                 a_horizonBG_rmse += err[0]
                 horizon_rmse_count += 1
 
             if self.worker_mode == 'training':   # store -> rollout for training
-                scaled_cgm = linear_scaling(x=state.CGM, x_min=self.args.glucose_min, x_max=self.args.glucose_max)
+                scaled_cgm = linear_scaling(x=cgm_val, x_min=self.args.glucose_min, x_max=self.args.glucose_max)
                 self.memory.store(self.cur_state, self.feat, policy_step['action'][0],
                                   reward, policy_step['state_value'], policy_step['log_prob'], scaled_cgm, self.counter)
             # update -> state.
-            self.cur_state, self.feat = self.state_space.update(cgm=state.CGM, ins=pump_action,
+            self.cur_state, self.feat = self.state_space.update(cgm=cgm_val, ins=pump_action,
                                                                 meal=info['remaining_time'], hour=(self.counter+1),
                                                                 meal_type=info['meal_type'], carbs=info['future_carb']) #info['day_hour']
-            self.episode_history[self.counter] = [self.episode, self.counter, state.CGM, info['meal'] * info['sample_time'],
+            self.episode_history[self.counter] = [self.episode, self.counter, cgm_val, info['meal'] * info['sample_time'],
                                                   pump_action, reward, rl_action, policy_step['mu'][0], policy_step['std'][0],
                                                   policy_step['log_prob'][0], policy_step['state_value'][0], info['day_hour'],
                                                   info['day_min']]
             self.counter += 1
             stop_factor = (self.max_epi_length - 1) if self.worker_mode == 'training' else (self.max_test_epi_len - 1)
-
-            criteria = state.CGM <= 40 or state.CGM >= 600 or self.counter > stop_factor
+            criteria = cgm_val <= 40 or cgm_val >= 600 or self.counter > stop_factor
             if criteria:  # episode termination criteria.
                 if self.worker_mode == 'training':
                     final_val = policy.get_final_value(self.cur_state, self.feat)
@@ -128,8 +128,6 @@ class Worker:
         a_horizonBG_rmse = np.sqrt(a_horizonBG_rmse / horizon_rmse_count) if horizon_rmse_count != 0 else 0
         if self.worker_mode == 'training':
             data = self.memory.get()
-        else:
-            data = [ri, alive_steps, normo, hypo, sev_hypo, hyper, lgbi, hgbi, sev_hyper]
         return data, aBGpred_rmse, a_horizonBG_rmse
 
     def save_log(self, log_name, file_name):

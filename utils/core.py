@@ -185,7 +185,6 @@ def inverse_linear_scaling(y, x_min, x_max):
     x = (y+1) * (x_max - x_min) * (1/2) + x_min
     return x
 
-
 def reverse_kl_approx(p, q):
     # https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/ppo/ppo.py
     # https://github.com/DLR-RM/stable-baselines3/issues/417
