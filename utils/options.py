@@ -29,13 +29,6 @@ class Options:
                                  help='patient_id = [adolescent child adults] hence 0 - 9 indexes adolescents likewise')
         self.parser.add_argument('--sensor', type=str, default='GuardianRT', help='Dexcom, GuardianRT, Navigator')
         self.parser.add_argument('--pump', type=str, default='Insulet', help='Insulet, Cozmo')
-        # simulator backend
-        self.parser.add_argument('--sim', type=str, default='simglucose', choices=['simglucose', 'dmms'],
-                                 help='Simulation environment: simglucose or dmms')
-        self.parser.add_argument('--dmms_exe', type=str, default='', help='Path to DMMS.R executable')
-        self.parser.add_argument('--dmms_cfg', type=str, default='', help='Path to DMMS.R config XML')
-        self.parser.add_argument('--dmms_server', type=str, default='http://127.0.0.1:5000',
-                                 help='DMMS environment FastAPI server URL')
 
         # for training: # ideal benchmark adult and adolescent doesnt have snacks though => set prob '-1' to remove
         self.parser.add_argument('--meal_prob', type=list, default=[0.95, -1, 0.95, -1, 0.95, -1], help='')
