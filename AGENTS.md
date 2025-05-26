@@ -143,4 +143,6 @@ except CalledProcessError as e:
 
 ### Recent Updates
 - Added check in `environments/simglucose/simglucose/__init__.py` to skip Gym environment registration if Gym is not installed or if `simglucose-v0` is already registered. This prevents errors like `gym.error.Error: Cannot re-register id: simglucose-v0` when running the FastAPI server.
+- `Sim_CLI/main.py` now returns an extended step response (`StepResponse`) containing `cgm`, `reward`, `done`, and `info` fields in addition to `insulin_action_U_per_h`. This helps `DmmsEnv` interact with the API like a Gym environment.
+- `DmmsEnv` tracks the latest CGM value and updates it after each step. The environment also uses `args.dmms_io_root` from `utils.core.get_env()` so results are saved under `results/dmms_runs`.
 

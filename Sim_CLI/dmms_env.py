@@ -37,6 +37,7 @@ class DmmsEnv:
         self.process: Optional[subprocess.Popen] = None
         self.episode_counter = 0
         self.results_dir: Optional[Path] = None
+        self.last_cgm: float = 0.0
 
     # ------------------------------------------------------------------
     def _start_process(self, results_dir: Path) -> None:
@@ -69,6 +70,8 @@ class DmmsEnv:
         if obs_val is None:
             obs_val = 0.0
 
+        self.last_cgm = float(obs_val)
+
         obs = Observation(CGM=obs_val)
         default_info = {
             "sample_time": 5,
@@ -88,7 +91,7 @@ class DmmsEnv:
         resp = httpx.post(f"{self.server_url}/env_step", json=payload)
         resp.raise_for_status()
         data = resp.json()
-        obs_val = data.get("cgm")
+        obs_val = data.get("cgm", self.last_cgm)
         reward = data.get("reward", 0.0)
         done = data.get("done", False)
         info = data.get("info", {}) or {}
@@ -103,6 +106,7 @@ class DmmsEnv:
         }
         default_info.update(info)
         obs = Observation(CGM=obs_val)
+        self.last_cgm = float(obs_val)
         return Step(observation=obs, reward=reward, done=done, info=default_info)
 
     # ------------------------------------------------------------------

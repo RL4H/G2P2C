@@ -11,7 +11,12 @@ import torch
 
 def get_env(args, patient_name='adult#001', env_id='simglucose-adult1-v0', custom_reward=None, seed=None):
     if getattr(args, 'sim', 'simglucose') == 'dmms':
-        return DmmsEnv(exe=args.dmms_exe, cfg=args.dmms_cfg, server_url=args.dmms_server)
+        return DmmsEnv(
+            exe=args.dmms_exe,
+            cfg=args.dmms_cfg,
+            server_url=args.dmms_server,
+            io_root=getattr(args, 'dmms_io_root', None),
+        )
 
     register(
         id=env_id,
