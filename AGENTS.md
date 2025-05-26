@@ -124,7 +124,7 @@ except CalledProcessError as e:
 - `Sim_CLI/main.py` now returns an extended step response (`StepResponse`) containing `cgm`, `reward`, `done`, and `info` fields in addition to `insulin_action_U_per_h`. This helps `DmmsEnv` interact with the API like a Gym environment.
 - `DmmsEnv` tracks the latest CGM value and updates it after each step. The environment also uses `args.dmms_io_root` from `utils.core.get_env()` so results are saved under `results/dmms_runs`.
 - `uvicorn Sim_CLI.main:app --host 127.0.0.1 --port 500` 항상 이 코드를 사용해서 서버를 열고, 이 서버와 통신을 함.
-- `python Sim_CLI/run_dmms_cli.py "C:\Program Files\The Epsilon Group\DMMS.R\simulator\DMMS.R.exe" "C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml" "log_single.txt" "\results_test" ` 이 코드를 통해서 터미널에서 DMMS.R 시뮬레이터를 항상 구동함.
+- `python Sim_CLI/run_dmms_cli.py "C:\Program Files\The Epsilon Group\DMMS.R\simulator\DMMS.R.exe" "C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml" "log_single.txt" "\results_test" ` 이 코드를 통해서 터미널에서 DMMS.R 시뮬레이터를 항상 구동함. 위를 실행하고 난 디버깅 결과는 아래와 같다. 
   - 두 개의 디버깅 결과 제시됨.
     - -----------------------------
       DEBUG: Model raw output: -0.2924, Scaled action: 1.5524, Clipped action: 1.5524
@@ -139,4 +139,7 @@ except CalledProcessError as e:
       Loaded \results_test\signalHistory.Type1 Adult.adult#001.csv with 1441 rows
 - 위 두 개의 코드와 연관된 코드는 모두 문제가 없음
 - 주로 작업은 Sim_CLI에서 수행하고, 수정도 주로 이 폴더 안에 있는 코드에서 수행함. 
-
+- `DmmsEnv`를 통해 DMMS.R을 서브프로세스로 실행하고 HTTP API로 제어하는 기본 기능은 동작한다. 다만 학습 루프와 완전히 통합되어 있지는 않다.
+- 다음 단계 제안:
+  1. `experiments/run_RL_agent.py`에서 `--sim dmms` 옵션 사용 시 학습 반복이 제대로 끝났는지 확인하고, 필요하면 에피소드 종료 후 `/episode_end`를 호출하도록 개선.
+- Worker 모듈의 초기 상태 및 step 결과는 `step.observation.CGM` 형태로 접근하도록 수정되었다. 
