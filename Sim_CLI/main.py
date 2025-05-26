@@ -134,7 +134,15 @@ class ActionResponse(BaseModel):
     insulin_action_U_per_h: float = Field(..., description="0.0~5.0 U/h 사이의 실수")
 
 
-def _handle_env_step(req: StateRequest, endpoint_name: str) -> ActionResponse:
+class StepResponse(ActionResponse):
+    """확장된 응답 모델. 강화학습용 정보를 추가로 포함한다."""
+    cgm: Optional[float] = None
+    reward: Optional[float] = None
+    done: Optional[bool] = None
+    info: Optional[Dict] = None
+
+
+def _handle_env_step(req: StateRequest, endpoint_name: str) -> StepResponse:
     """공통 스텝 로직을 수행하고 다음 행동을 반환한다."""
     agent = app_state.get("agent")
     state_space = app_state.get("state_space_instance")
@@ -233,7 +241,23 @@ def _handle_env_step(req: StateRequest, endpoint_name: str) -> ActionResponse:
         except Exception as csv_e:
             print(f"ERROR:    [LOG_MAIN_CSV_WRITE] Failed to write Simglucose format log: {csv_e}", file=sys.stderr)
 
-        return ActionResponse(insulin_action_U_per_h=action_U_per_h)
+        step_info = {
+            "sample_time": 5,
+            "meal": current_meal_raw,
+            "remaining_time": current_meal_raw,
+            "meal_type": 0,
+            "future_carb": 0,
+            "day_hour": int(generated_hour),
+            "day_min": day_min_for_log,
+        }
+
+        return StepResponse(
+            insulin_action_U_per_h=action_U_per_h,
+            cgm=float(current_cgm_raw),
+            reward=float(reward_val) if prev_state is not None else 0.0,
+            done=False,
+            info=step_info,
+        )
 
     except ValueError as ve:
         print(f"\n!!! ValueError processing {endpoint_name}: {ve} !!!", file=sys.stderr)
@@ -255,13 +279,13 @@ app.add_middleware(
 )
 
 
-@app.post("/predict_action", response_model=ActionResponse)
+@app.post("/predict_action", response_model=StepResponse)
 def predict_action(req: StateRequest):
     """기존 호환성을 위한 엔드포인트. 내부적으로 /env_step 로직을 사용한다."""
     return _handle_env_step(req, "/predict_action")
 
 
-@app.post("/env_step", response_model=ActionResponse)
+@app.post("/env_step", response_model=StepResponse)
 def env_step(req: StateRequest):
     """강화학습용 스텝 처리 엔드포인트."""
     return _handle_env_step(req, "/env_step")
