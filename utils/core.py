@@ -16,6 +16,7 @@ def get_env(args, patient_name='adult#001', env_id='simglucose-adult1-v0', custo
             cfg=args.dmms_cfg,
             server_url=args.dmms_server,
             io_root=getattr(args, 'dmms_io_root', None),
+            debug=bool(getattr(args, 'debug', 0)),
         )
 
     register(
