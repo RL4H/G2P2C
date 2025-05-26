@@ -193,6 +193,7 @@ def infer_action(
     state_hist_tensor = torch.as_tensor(state_hist_processed, dtype=torch.float32, device=agent.device)
     hc_state_tensor = torch.as_tensor(hc_state_processed, dtype=torch.float32, device=agent.device)
     
+    
     # 3. 에이전트 정책을 사용하여 추론
     with torch.no_grad():
         # G2P2C의 ActorCritic.get_action은 내부적으로 predict를 호출하고,
@@ -202,21 +203,11 @@ def infer_action(
     
     raw_action_model_output = float(action_data_dict['action']) # 모델 출력은 -1 ~ 1 범위
 
-    # 4. 모델 출력(-1~1)을 실제 인슐린 단위(U/h)로 변환 및 클리핑
-    # G2P2C Worker.rollout의 액션 처리 로직을 참고해야 함.
-    if agent.args.action_type == 'exponential':
-        final_action_U_per_h = agent.args.action_scale * np.exp((raw_action_model_output) * 4)
-    else:
-        # 기타 스케일링 방식은 학습 코드와 동일하게 구현돼 있지 않으므로 단순 스케일링 사용
-        print(
-            f"WARNING: Action type '{agent.args.action_type}' not fully supported. Using linear scaling as fallback.",
-            file=sys.stderr,
-        )
-        final_action_U_per_h = raw_action_model_output * agent.args.action_scale
-
+    final_action_U_per_h = agent.args.action_scale * np.exp((raw_action_model_output) * 4) 
     
     # 최종적으로 insulin_min, insulin_max 범위로 클리핑
     action_clipped = float(np.clip(final_action_U_per_h, agent.args.insulin_min, agent.args.insulin_max))
-    
-    # print(f"DEBUG: Model raw output: {raw_action_model_output:.4f}, Scaled action: {final_action_U_per_h:.4f}, Clipped action: {action_clipped:.4f}")
+    # action_clipped *= 0
+    # 만약 모델의 행동이 이루어지지 않을 경우 위와 같이 0을 곱하면 된다.
+    print(f"\n\n-----------------------------\nDEBUG: Model raw output: {raw_action_model_output:.4f}, Scaled action: {final_action_U_per_h:.4f}, Clipped action: {action_clipped:.4f}")
     return action_clipped

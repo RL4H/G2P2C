@@ -6,3 +6,18 @@
         A csv file to be overwritten in that directory may be open in another program.
 22:40:40  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
 22:43:56  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+22:53:40  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+23:09:05  Running simulation for configuration:  C:\path\to\Sim_CLI_1.2.xml
+    Cannot run simulation -- configuration did not validate:
+<b><font color="red">ERROR:</font></b>  No subjects exist in the configuration23:09:52  Running simulation for configuration:  C:\path\to\Sim_CLI_1.2.xml
+    Cannot run simulation -- configuration did not validate:
+<b><font color="red">ERROR:</font></b>  No subjects exist in the configuration23:10:38  Running simulation for configuration:  C:\path\to\Sim_CLI_1.2.xml
+    Cannot run simulation -- configuration did not validate:
+<b><font color="red">ERROR:</font></b>  No subjects exist in the configuration23:10:42  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+23:11:15  Running simulation for configuration:  C:\path\to\Sim_CLI_1.2.xml
+    Cannot run simulation -- configuration did not validate:
+<b><font color="red">ERROR:</font></b>  No subjects exist in the configuration23:13:24  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+23:29:15  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+23:33:29  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+13:43:41  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+17:08:13  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml

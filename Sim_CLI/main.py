@@ -195,6 +195,9 @@ def _handle_env_step(req: StateRequest, endpoint_name: str) -> StepResponse:
             hc_state_processed=processed_hc_state_np,
         )
 
+
+        # action_U_per_h *= 0
+
         current_state_dict = {
             "state_hist": processed_state_hist_np.tolist(),
             "hc_state": processed_hc_state_np.flatten().tolist(),
