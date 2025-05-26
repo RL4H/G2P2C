@@ -10,7 +10,8 @@ from __future__ import annotations
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Deque, List
+from collections import deque
 
 import httpx
 
@@ -27,6 +28,7 @@ class DmmsEnv:
         server_url: str = "http://127.0.0.1:5000",
         log_file: str = "log_single.txt",
         io_root: Optional[Path] = None,
+        debug: bool = False,
     ) -> None:
         self.exe = Path(exe)
         self.cfg = Path(cfg)
@@ -38,6 +40,11 @@ class DmmsEnv:
         self.episode_counter = 0
         self.results_dir: Optional[Path] = None
         self.last_cgm: float = 0.0
+
+        self.history_len = 12
+        self.bg_history: Deque[float] = deque([0.0] * self.history_len, maxlen=self.history_len)
+        self.ins_history: Deque[float] = deque([0.0] * self.history_len, maxlen=self.history_len)
+        self.debug = debug
 
     # ------------------------------------------------------------------
     def _start_process(self, results_dir: Path) -> None:
@@ -72,6 +79,9 @@ class DmmsEnv:
 
         self.last_cgm = float(obs_val)
 
+        self.bg_history = deque([float(obs_val)] * self.history_len, maxlen=self.history_len)
+        self.ins_history = deque([0.0] * self.history_len, maxlen=self.history_len)
+
         obs = Observation(CGM=obs_val)
         default_info = {
             "sample_time": 5,
@@ -82,13 +92,22 @@ class DmmsEnv:
             "day_hour": 0,
             "day_min": 0,
         }
-        return Step(observation=obs, reward=0.0, done=False, info=default_info)
+        # Step 함수는 추가 인자를 info 딕셔너리로 묶어 전달하므로
+        # 키-값 쌍 형태로 풀어서 넘긴다.
+        return Step(observation=obs, reward=0.0, done=False, **default_info)
 
     # ------------------------------------------------------------------
     def step(self, action: Any) -> Step:
         """액션을 서버로 전송하고 다음 상태를 받아온다."""
-        payload = {"action": action}
+        self.bg_history.append(self.last_cgm)
+        self.ins_history.append(float(action))
+        history: List[List[float]] = [[self.bg_history[i], self.ins_history[i]] for i in range(self.history_len)]
+        payload = {"history": history, "meal": 0.0}
+        if self.debug:
+            print(f"[DmmsEnv] Sending payload: {payload}")
         resp = httpx.post(f"{self.server_url}/env_step", json=payload)
+        if self.debug:
+            print(f"[DmmsEnv] Response status: {resp.status_code}, body: {resp.text}")
         resp.raise_for_status()
         data = resp.json()
         obs_val = data.get("cgm", self.last_cgm)
@@ -107,7 +126,8 @@ class DmmsEnv:
         default_info.update(info)
         obs = Observation(CGM=obs_val)
         self.last_cgm = float(obs_val)
-        return Step(observation=obs, reward=reward, done=done, info=default_info)
+        # Step 함수 특성상 info 항목을 풀어서 전달해야 정상적인 dict 로 반환된다.
+        return Step(observation=obs, reward=reward, done=done, **default_info)
 
     # ------------------------------------------------------------------
     def close(self) -> None:

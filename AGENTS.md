@@ -142,4 +142,10 @@ except CalledProcessError as e:
 - `DmmsEnv`를 통해 DMMS.R을 서브프로세스로 실행하고 HTTP API로 제어하는 기본 기능은 동작한다. 다만 학습 루프와 완전히 통합되어 있지는 않다.
 - 다음 단계 제안:
   1. `experiments/run_RL_agent.py`에서 `--sim dmms` 옵션 사용 시 학습 반복이 제대로 끝났는지 확인하고, 필요하면 에피소드 종료 후 `/episode_end`를 호출하도록 개선.
-- Worker 모듈의 초기 상태 및 step 결과는 `step.observation.CGM` 형태로 접근하도록 수정되었다. 
+- Worker 모듈의 초기 상태 및 step 결과는 `step.observation.CGM` 형태로 접근하도록 수정되었다.
+- 2024-04-13: `DmmsEnv.step`이 `/env_step` 호출 시 `{"action": ...}` 형태의 잘못된 페이로드를 보내 422 오류가 발생함을 확인.
+  `history` 필드와 `meal` 값을 포함하도록 수정하여 FastAPI 서버 스키마와 일치시켰다. 옵션 `--debug` 사용 시
+  `DmmsEnv`가 요청과 응답을 출력한다. `utils.core.get_env()`는 이제 `debug` 값을 전달한다.
+- 2025-05-26: `DmmsEnv.reset` 및 `step`이 `Step(..., **info)` 형식으로 반환하도록 수정해 `info` 딕셔너리가 올바르게 전달된다.
+  `Worker` 클래스는 `env.step()` 결과를 언팩한 뒤 `Observation.CGM` 값만 사용하도록 정리하였다.
+  `Pump` 모듈은 `Step`과 `Observation`을 모두 처리할 수 있도록 `_get_cgm()` 헬퍼를 도입했다.
