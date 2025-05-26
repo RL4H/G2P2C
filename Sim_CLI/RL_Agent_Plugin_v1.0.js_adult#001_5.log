@@ -1,0 +1,460 @@
+Sim Day 000, Time 00:00		[RunIteration] Minute: 0, CGM: 122.02
+--- 5-Minute Interval Boundary (Minute: 0) ---
+ Current Hour: 0
+ Time until next meal: 480.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 122.02, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.0000, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[122.021066,0]],"hour":0,"meal":96}
+ Raw API Response: {"insulin_action_U_per_h":1.0205283716899902,"cgm":122.021066,"reward":0.0,"done":false,"info":{"sample_time":5,"meal":96.0,"remaining_time":96.0,"meal_type":0,"future_carb":0,"day_hour":0,"day_min":0}}
+ Parsed Action from Agent (U/h): 1.0205
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.0205 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:01		[RunIteration] Minute: 1, CGM: 122.01
+Sim Day 000, Time 00:02		[RunIteration] Minute: 2, CGM: 121.98
+Sim Day 000, Time 00:03		[RunIteration] Minute: 3, CGM: 121.94
+Sim Day 000, Time 00:04		[RunIteration] Minute: 4, CGM: 121.88
+Sim Day 000, Time 00:05		[RunIteration] Minute: 5, CGM: 121.82
+--- 5-Minute Interval Boundary (Minute: 5) ---
+ Current Hour: 0
+ Time until next meal: 475.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 121.82, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.0205, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902]],"hour":0,"meal":95}
+ Raw API Response: {"insulin_action_U_per_h":0.4406360618783227,"cgm":121.81660756356624,"reward":0.9978057707906085,"done":false,"info":{"sample_time":5,"meal":95.0,"remaining_time":95.0,"meal_type":0,"future_carb":0,"day_hour":1,"day_min":5}}
+ Parsed Action from Agent (U/h): 0.4406
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.4406 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:06		[RunIteration] Minute: 6, CGM: 121.74
+Sim Day 000, Time 00:07		[RunIteration] Minute: 7, CGM: 121.66
+Sim Day 000, Time 00:08		[RunIteration] Minute: 8, CGM: 121.57
+Sim Day 000, Time 00:09		[RunIteration] Minute: 9, CGM: 121.47
+Sim Day 000, Time 00:10		[RunIteration] Minute: 10, CGM: 121.37
+--- 5-Minute Interval Boundary (Minute: 10) ---
+ Current Hour: 0
+ Time until next meal: 470.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 121.37, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.4406, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227]],"hour":0,"meal":94}
+ Raw API Response: {"insulin_action_U_per_h":1.4262756795791944,"cgm":121.37272537837458,"reward":0.9980030038595443,"done":false,"info":{"sample_time":5,"meal":94.0,"remaining_time":94.0,"meal_type":0,"future_carb":0,"day_hour":2,"day_min":10}}
+ Parsed Action from Agent (U/h): 1.4263
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.4263 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:11		[RunIteration] Minute: 11, CGM: 121.27
+Sim Day 000, Time 00:12		[RunIteration] Minute: 12, CGM: 121.16
+Sim Day 000, Time 00:13		[RunIteration] Minute: 13, CGM: 121.06
+Sim Day 000, Time 00:14		[RunIteration] Minute: 14, CGM: 120.95
+Sim Day 000, Time 00:15		[RunIteration] Minute: 15, CGM: 120.84
+--- 5-Minute Interval Boundary (Minute: 15) ---
+ Current Hour: 0
+ Time until next meal: 465.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 120.84, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.4263, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944]],"hour":0,"meal":93}
+ Raw API Response: {"insulin_action_U_per_h":3.5717000791591422,"cgm":120.83673073505591,"reward":0.9982296590701981,"done":false,"info":{"sample_time":5,"meal":93.0,"remaining_time":93.0,"meal_type":0,"future_carb":0,"day_hour":3,"day_min":15}}
+ Parsed Action from Agent (U/h): 3.5717
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 3.5717 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:16		[RunIteration] Minute: 16, CGM: 120.73
+Sim Day 000, Time 00:17		[RunIteration] Minute: 17, CGM: 120.61
+Sim Day 000, Time 00:18		[RunIteration] Minute: 18, CGM: 120.50
+Sim Day 000, Time 00:19		[RunIteration] Minute: 19, CGM: 120.39
+Sim Day 000, Time 00:20		[RunIteration] Minute: 20, CGM: 120.28
+--- 5-Minute Interval Boundary (Minute: 20) ---
+ Current Hour: 0
+ Time until next meal: 460.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 120.28, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 3.5717, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422]],"hour":0,"meal":92}
+ Raw API Response: {"insulin_action_U_per_h":0.5336963220633829,"cgm":120.2811596003527,"reward":0.9984511351302742,"done":false,"info":{"sample_time":5,"meal":92.0,"remaining_time":92.0,"meal_type":0,"future_carb":0,"day_hour":4,"day_min":20}}
+ Parsed Action from Agent (U/h): 0.5337
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.5337 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:21		[RunIteration] Minute: 21, CGM: 120.17
+Sim Day 000, Time 00:22		[RunIteration] Minute: 22, CGM: 120.06
+Sim Day 000, Time 00:23		[RunIteration] Minute: 23, CGM: 119.96
+Sim Day 000, Time 00:24		[RunIteration] Minute: 24, CGM: 119.85
+Sim Day 000, Time 00:25		[RunIteration] Minute: 25, CGM: 119.75
+--- 5-Minute Interval Boundary (Minute: 25) ---
+ Current Hour: 0
+ Time until next meal: 455.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 119.75, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.5337, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829]],"hour":0,"meal":91}
+ Raw API Response: {"insulin_action_U_per_h":0.6568481450211673,"cgm":119.7452443569685,"reward":0.9986516176111303,"done":false,"info":{"sample_time":5,"meal":91.0,"remaining_time":91.0,"meal_type":0,"future_carb":0,"day_hour":5,"day_min":25}}
+ Parsed Action from Agent (U/h): 0.6568
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.6568 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:26		[RunIteration] Minute: 26, CGM: 119.64
+Sim Day 000, Time 00:27		[RunIteration] Minute: 27, CGM: 119.54
+Sim Day 000, Time 00:28		[RunIteration] Minute: 28, CGM: 119.44
+Sim Day 000, Time 00:29		[RunIteration] Minute: 29, CGM: 119.35
+Sim Day 000, Time 00:30		[RunIteration] Minute: 30, CGM: 119.25
+--- 5-Minute Interval Boundary (Minute: 30) ---
+ Current Hour: 0
+ Time until next meal: 450.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 119.25, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.6568, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673]],"hour":0,"meal":90}
+ Raw API Response: {"insulin_action_U_per_h":2.028539005272959,"cgm":119.25208759878325,"reward":0.9988245364017969,"done":false,"info":{"sample_time":5,"meal":90.0,"remaining_time":90.0,"meal_type":0,"future_carb":0,"day_hour":6,"day_min":30}}
+ Parsed Action from Agent (U/h): 2.0285
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 2.0285 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:31		[RunIteration] Minute: 31, CGM: 119.16
+Sim Day 000, Time 00:32		[RunIteration] Minute: 32, CGM: 119.07
+Sim Day 000, Time 00:33		[RunIteration] Minute: 33, CGM: 118.98
+Sim Day 000, Time 00:34		[RunIteration] Minute: 34, CGM: 118.90
+Sim Day 000, Time 00:35		[RunIteration] Minute: 35, CGM: 118.82
+--- 5-Minute Interval Boundary (Minute: 35) ---
+ Current Hour: 0
+ Time until next meal: 445.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 118.82, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 2.0285, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959]],"hour":0,"meal":89}
+ Raw API Response: {"insulin_action_U_per_h":0.4724129406506301,"cgm":118.81615520853575,"reward":0.9989680438978283,"done":false,"info":{"sample_time":5,"meal":89.0,"remaining_time":89.0,"meal_type":0,"future_carb":0,"day_hour":7,"day_min":35}}
+ Parsed Action from Agent (U/h): 0.4724
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.4724 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:36		[RunIteration] Minute: 36, CGM: 118.74
+Sim Day 000, Time 00:37		[RunIteration] Minute: 37, CGM: 118.66
+Sim Day 000, Time 00:38		[RunIteration] Minute: 38, CGM: 118.59
+Sim Day 000, Time 00:39		[RunIteration] Minute: 39, CGM: 118.52
+Sim Day 000, Time 00:40		[RunIteration] Minute: 40, CGM: 118.45
+--- 5-Minute Interval Boundary (Minute: 40) ---
+ Current Hour: 0
+ Time until next meal: 440.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 118.45, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.4724, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301]],"hour":0,"meal":88}
+ Raw API Response: {"insulin_action_U_per_h":1.6726892132596731,"cgm":118.44678345409358,"reward":0.9990827003197343,"done":false,"info":{"sample_time":5,"meal":88.0,"remaining_time":88.0,"meal_type":0,"future_carb":0,"day_hour":8,"day_min":40}}
+ Parsed Action from Agent (U/h): 1.6727
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.6727 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:41		[RunIteration] Minute: 41, CGM: 118.38
+Sim Day 000, Time 00:42		[RunIteration] Minute: 42, CGM: 118.32
+Sim Day 000, Time 00:43		[RunIteration] Minute: 43, CGM: 118.26
+Sim Day 000, Time 00:44		[RunIteration] Minute: 44, CGM: 118.20
+Sim Day 000, Time 00:45		[RunIteration] Minute: 45, CGM: 118.15
+--- 5-Minute Interval Boundary (Minute: 45) ---
+ Current Hour: 0
+ Time until next meal: 435.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 118.15, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.6727, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731]],"hour":0,"meal":87}
+ Raw API Response: {"insulin_action_U_per_h":0.9681597255089415,"cgm":118.14993957216308,"reward":0.999170186666589,"done":false,"info":{"sample_time":5,"meal":87.0,"remaining_time":87.0,"meal_type":0,"future_carb":0,"day_hour":9,"day_min":45}}
+ Parsed Action from Agent (U/h): 0.9682
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.9682 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:46		[RunIteration] Minute: 46, CGM: 118.10
+Sim Day 000, Time 00:47		[RunIteration] Minute: 47, CGM: 118.05
+Sim Day 000, Time 00:48		[RunIteration] Minute: 48, CGM: 118.01
+Sim Day 000, Time 00:49		[RunIteration] Minute: 49, CGM: 117.97
+Sim Day 000, Time 00:50		[RunIteration] Minute: 50, CGM: 117.93
+--- 5-Minute Interval Boundary (Minute: 50) ---
+ Current Hour: 0
+ Time until next meal: 430.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 117.93, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.9682, Length: 12
+ Prepared Agent State for API: {"history":[[0,0],[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415]],"hour":0,"meal":86}
+ Raw API Response: {"insulin_action_U_per_h":1.8910842033501563,"cgm":117.92918013526887,"reward":0.9992325384073264,"done":false,"info":{"sample_time":5,"meal":86.0,"remaining_time":86.0,"meal_type":0,"future_carb":0,"day_hour":10,"day_min":50}}
+ Parsed Action from Agent (U/h): 1.8911
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.8911 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:51		[RunIteration] Minute: 51, CGM: 117.89
+Sim Day 000, Time 00:52		[RunIteration] Minute: 52, CGM: 117.86
+Sim Day 000, Time 00:53		[RunIteration] Minute: 53, CGM: 117.83
+Sim Day 000, Time 00:54		[RunIteration] Minute: 54, CGM: 117.81
+Sim Day 000, Time 00:55		[RunIteration] Minute: 55, CGM: 117.79
+--- 5-Minute Interval Boundary (Minute: 55) ---
+ Current Hour: 0
+ Time until next meal: 425.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 117.79, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.8911, Length: 12
+ Prepared Agent State for API: {"history":[[122.021066,0],[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563]],"hour":0,"meal":85}
+ Raw API Response: {"insulin_action_U_per_h":2.7360789191615615,"cgm":117.78622197322251,"reward":0.9992716753184905,"done":false,"info":{"sample_time":5,"meal":85.0,"remaining_time":85.0,"meal_type":0,"future_carb":0,"day_hour":11,"day_min":55}}
+ Parsed Action from Agent (U/h): 2.7361
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 2.7361 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 00:56		[RunIteration] Minute: 56, CGM: 117.77
+Sim Day 000, Time 00:57		[RunIteration] Minute: 57, CGM: 117.75
+Sim Day 000, Time 00:58		[RunIteration] Minute: 58, CGM: 117.74
+Sim Day 000, Time 00:59		[RunIteration] Minute: 59, CGM: 117.73
+Sim Day 000, Time 01:00		[RunIteration] Minute: 60, CGM: 117.72
+--- 5-Minute Interval Boundary (Minute: 60) ---
+ Current Hour: 1
+ Time until next meal: 420.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 117.72, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 2.7361, Length: 12
+ Prepared Agent State for API: {"history":[[121.81660756356624,1.0205283716899902],[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615]],"hour":1,"meal":84}
+ Raw API Response: {"insulin_action_U_per_h":1.360399231412985,"cgm":117.72129892039288,"reward":0.9992891258130104,"done":false,"info":{"sample_time":5,"meal":84.0,"remaining_time":84.0,"meal_type":0,"future_carb":0,"day_hour":12,"day_min":0}}
+ Parsed Action from Agent (U/h): 1.3604
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.3604 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:01		[RunIteration] Minute: 61, CGM: 117.72
+Sim Day 000, Time 01:02		[RunIteration] Minute: 62, CGM: 117.72
+Sim Day 000, Time 01:03		[RunIteration] Minute: 63, CGM: 117.72
+Sim Day 000, Time 01:04		[RunIteration] Minute: 64, CGM: 117.72
+Sim Day 000, Time 01:05		[RunIteration] Minute: 65, CGM: 117.73
+--- 5-Minute Interval Boundary (Minute: 65) ---
+ Current Hour: 1
+ Time until next meal: 415.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 117.73, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.3604, Length: 12
+ Prepared Agent State for API: {"history":[[121.37272537837458,0.4406360618783227],[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985]],"hour":1,"meal":83}
+ Raw API Response: {"insulin_action_U_per_h":0.33089956719444125,"cgm":117.73337348428728,"reward":0.9992858956275114,"done":false,"info":{"sample_time":5,"meal":83.0,"remaining_time":83.0,"meal_type":0,"future_carb":0,"day_hour":13,"day_min":5}}
+ Parsed Action from Agent (U/h): 0.3309
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.3309 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:06		[RunIteration] Minute: 66, CGM: 117.74
+Sim Day 000, Time 01:07		[RunIteration] Minute: 67, CGM: 117.76
+Sim Day 000, Time 01:08		[RunIteration] Minute: 68, CGM: 117.78
+Sim Day 000, Time 01:09		[RunIteration] Minute: 69, CGM: 117.80
+Sim Day 000, Time 01:10		[RunIteration] Minute: 70, CGM: 117.82
+--- 5-Minute Interval Boundary (Minute: 70) ---
+ Current Hour: 1
+ Time until next meal: 410.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 117.82, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.3309, Length: 12
+ Prepared Agent State for API: {"history":[[120.83673073505591,1.4262756795791944],[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125]],"hour":1,"meal":82}
+ Raw API Response: {"insulin_action_U_per_h":1.6819918760461328,"cgm":117.8203259739442,"reward":0.9992624276571809,"done":false,"info":{"sample_time":5,"meal":82.0,"remaining_time":82.0,"meal_type":0,"future_carb":0,"day_hour":14,"day_min":10}}
+ Parsed Action from Agent (U/h): 1.6820
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.6820 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:11		[RunIteration] Minute: 71, CGM: 117.85
+Sim Day 000, Time 01:12		[RunIteration] Minute: 72, CGM: 117.88
+Sim Day 000, Time 01:13		[RunIteration] Minute: 73, CGM: 117.91
+Sim Day 000, Time 01:14		[RunIteration] Minute: 74, CGM: 117.94
+Sim Day 000, Time 01:15		[RunIteration] Minute: 75, CGM: 117.98
+--- 5-Minute Interval Boundary (Minute: 75) ---
+ Current Hour: 1
+ Time until next meal: 405.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 117.98, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.6820, Length: 12
+ Prepared Agent State for API: {"history":[[120.2811596003527,3.5717000791591422],[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328]],"hour":1,"meal":81}
+ Raw API Response: {"insulin_action_U_per_h":1.4689049082120498,"cgm":117.9791555758364,"reward":0.9992186265307423,"done":false,"info":{"sample_time":5,"meal":81.0,"remaining_time":81.0,"meal_type":0,"future_carb":0,"day_hour":15,"day_min":15}}
+ Parsed Action from Agent (U/h): 1.4689
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.4689 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:16		[RunIteration] Minute: 76, CGM: 118.02
+Sim Day 000, Time 01:17		[RunIteration] Minute: 77, CGM: 118.06
+Sim Day 000, Time 01:18		[RunIteration] Minute: 78, CGM: 118.11
+Sim Day 000, Time 01:19		[RunIteration] Minute: 79, CGM: 118.16
+Sim Day 000, Time 01:20		[RunIteration] Minute: 80, CGM: 118.21
+--- 5-Minute Interval Boundary (Minute: 80) ---
+ Current Hour: 1
+ Time until next meal: 400.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 118.21, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.4689, Length: 12
+ Prepared Agent State for API: {"history":[[119.7452443569685,0.5336963220633829],[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498]],"hour":1,"meal":80}
+ Raw API Response: {"insulin_action_U_per_h":0.44590593453907046,"cgm":118.2061602889665,"reward":0.9991539373889465,"done":false,"info":{"sample_time":5,"meal":80.0,"remaining_time":80.0,"meal_type":0,"future_carb":0,"day_hour":16,"day_min":20}}
+ Parsed Action from Agent (U/h): 0.4459
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.4459 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:21		[RunIteration] Minute: 81, CGM: 118.26
+Sim Day 000, Time 01:22		[RunIteration] Minute: 82, CGM: 118.32
+Sim Day 000, Time 01:23		[RunIteration] Minute: 83, CGM: 118.37
+Sim Day 000, Time 01:24		[RunIteration] Minute: 84, CGM: 118.43
+Sim Day 000, Time 01:25		[RunIteration] Minute: 85, CGM: 118.50
+--- 5-Minute Interval Boundary (Minute: 85) ---
+ Current Hour: 1
+ Time until next meal: 395.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 118.50, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.4459, Length: 12
+ Prepared Agent State for API: {"history":[[119.25208759878325,0.6568481450211673],[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046]],"hour":1,"meal":79}
+ Raw API Response: {"insulin_action_U_per_h":0.19566402096451685,"cgm":118.49707858583301,"reward":0.9990674650233834,"done":false,"info":{"sample_time":5,"meal":79.0,"remaining_time":79.0,"meal_type":0,"future_carb":0,"day_hour":17,"day_min":25}}
+ Parsed Action from Agent (U/h): 0.1957
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.1957 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:26		[RunIteration] Minute: 86, CGM: 118.56
+Sim Day 000, Time 01:27		[RunIteration] Minute: 87, CGM: 118.63
+Sim Day 000, Time 01:28		[RunIteration] Minute: 88, CGM: 118.70
+Sim Day 000, Time 01:29		[RunIteration] Minute: 89, CGM: 118.77
+Sim Day 000, Time 01:30		[RunIteration] Minute: 90, CGM: 118.85
+--- 5-Minute Interval Boundary (Minute: 90) ---
+ Current Hour: 1
+ Time until next meal: 390.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 118.85, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.1957, Length: 12
+ Prepared Agent State for API: {"history":[[118.81615520853575,2.028539005272959],[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685]],"hour":1,"meal":78}
+ Raw API Response: {"insulin_action_U_per_h":2.572036214173295,"cgm":118.84719622124163,"reward":0.9989581175224299,"done":false,"info":{"sample_time":5,"meal":78.0,"remaining_time":78.0,"meal_type":0,"future_carb":0,"day_hour":18,"day_min":30}}
+ Parsed Action from Agent (U/h): 2.5720
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 2.5720 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:31		[RunIteration] Minute: 91, CGM: 118.92
+Sim Day 000, Time 01:32		[RunIteration] Minute: 92, CGM: 119.00
+Sim Day 000, Time 01:33		[RunIteration] Minute: 93, CGM: 119.08
+Sim Day 000, Time 01:34		[RunIteration] Minute: 94, CGM: 119.17
+Sim Day 000, Time 01:35		[RunIteration] Minute: 95, CGM: 119.25
+--- 5-Minute Interval Boundary (Minute: 95) ---
+ Current Hour: 1
+ Time until next meal: 385.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 119.25, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 2.5720, Length: 12
+ Prepared Agent State for API: {"history":[[118.44678345409358,0.4724129406506301],[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295]],"hour":1,"meal":77}
+ Raw API Response: {"insulin_action_U_per_h":0.36766258896440174,"cgm":119.25144005539812,"reward":0.998824756102321,"done":false,"info":{"sample_time":5,"meal":77.0,"remaining_time":77.0,"meal_type":0,"future_carb":0,"day_hour":19,"day_min":35}}
+ Parsed Action from Agent (U/h): 0.3677
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.3677 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:36		[RunIteration] Minute: 96, CGM: 119.34
+Sim Day 000, Time 01:37		[RunIteration] Minute: 97, CGM: 119.43
+Sim Day 000, Time 01:38		[RunIteration] Minute: 98, CGM: 119.52
+Sim Day 000, Time 01:39		[RunIteration] Minute: 99, CGM: 119.61
+Sim Day 000, Time 01:40		[RunIteration] Minute: 100, CGM: 119.70
+--- 5-Minute Interval Boundary (Minute: 100) ---
+ Current Hour: 1
+ Time until next meal: 380.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 119.70, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.3677, Length: 12
+ Prepared Agent State for API: {"history":[[118.14993957216308,1.6726892132596731],[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174]],"hour":1,"meal":76}
+ Raw API Response: {"insulin_action_U_per_h":0.4711717921862366,"cgm":119.70446344408174,"reward":0.9986663394409907,"done":false,"info":{"sample_time":5,"meal":76.0,"remaining_time":76.0,"meal_type":0,"future_carb":0,"day_hour":20,"day_min":40}}
+ Parsed Action from Agent (U/h): 0.4712
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.4712 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:41		[RunIteration] Minute: 101, CGM: 119.80
+Sim Day 000, Time 01:42		[RunIteration] Minute: 102, CGM: 119.90
+Sim Day 000, Time 01:43		[RunIteration] Minute: 103, CGM: 120.00
+Sim Day 000, Time 01:44		[RunIteration] Minute: 104, CGM: 120.10
+Sim Day 000, Time 01:45		[RunIteration] Minute: 105, CGM: 120.20
+--- 5-Minute Interval Boundary (Minute: 105) ---
+ Current Hour: 1
+ Time until next meal: 375.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 120.20, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.4712, Length: 12
+ Prepared Agent State for API: {"history":[[117.92918013526887,0.9681597255089415],[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174],[120.20070887504956,0.4711717921862366]],"hour":1,"meal":75}
+ Raw API Response: {"insulin_action_U_per_h":0.5160670377434349,"cgm":120.20070887504956,"reward":0.9984820598598589,"done":false,"info":{"sample_time":5,"meal":75.0,"remaining_time":75.0,"meal_type":0,"future_carb":0,"day_hour":21,"day_min":45}}
+ Parsed Action from Agent (U/h): 0.5161
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.5161 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:46		[RunIteration] Minute: 106, CGM: 120.30
+Sim Day 000, Time 01:47		[RunIteration] Minute: 107, CGM: 120.41
+Sim Day 000, Time 01:48		[RunIteration] Minute: 108, CGM: 120.52
+Sim Day 000, Time 01:49		[RunIteration] Minute: 109, CGM: 120.62
+Sim Day 000, Time 01:50		[RunIteration] Minute: 110, CGM: 120.73
+--- 5-Minute Interval Boundary (Minute: 110) ---
+ Current Hour: 1
+ Time until next meal: 370.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 120.73, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.5161, Length: 12
+ Prepared Agent State for API: {"history":[[117.78622197322251,1.8910842033501563],[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174],[120.20070887504956,0.4711717921862366],[120.73445852686305,0.5160670377434349]],"hour":1,"meal":74}
+ Raw API Response: {"insulin_action_U_per_h":1.394974555571866,"cgm":120.73445852686305,"reward":0.9982714636862043,"done":false,"info":{"sample_time":5,"meal":74.0,"remaining_time":74.0,"meal_type":0,"future_carb":0,"day_hour":22,"day_min":50}}
+ Parsed Action from Agent (U/h): 1.3950
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.3950 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:51		[RunIteration] Minute: 111, CGM: 120.85
+Sim Day 000, Time 01:52		[RunIteration] Minute: 112, CGM: 120.96
+Sim Day 000, Time 01:53		[RunIteration] Minute: 113, CGM: 121.07
+Sim Day 000, Time 01:54		[RunIteration] Minute: 114, CGM: 121.18
+Sim Day 000, Time 01:55		[RunIteration] Minute: 115, CGM: 121.30
+--- 5-Minute Interval Boundary (Minute: 115) ---
+ Current Hour: 1
+ Time until next meal: 365.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 121.30, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.3950, Length: 12
+ Prepared Agent State for API: {"history":[[117.72129892039288,2.7360789191615615],[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174],[120.20070887504956,0.4711717921862366],[120.73445852686305,0.5160670377434349],[121.29994069652194,1.394974555571866]],"hour":1,"meal":73}
+ Raw API Response: {"insulin_action_U_per_h":0.21792113100119354,"cgm":121.29994069652194,"reward":0.9980345240280281,"done":false,"info":{"sample_time":5,"meal":73.0,"remaining_time":73.0,"meal_type":0,"future_carb":0,"day_hour":23,"day_min":55}}
+ Parsed Action from Agent (U/h): 0.2179
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.2179 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 01:56		[RunIteration] Minute: 116, CGM: 121.42
+Sim Day 000, Time 01:57		[RunIteration] Minute: 117, CGM: 121.53
+Sim Day 000, Time 01:58		[RunIteration] Minute: 118, CGM: 121.65
+Sim Day 000, Time 01:59		[RunIteration] Minute: 119, CGM: 121.77
+Sim Day 000, Time 02:00		[RunIteration] Minute: 120, CGM: 121.89
+--- 5-Minute Interval Boundary (Minute: 120) ---
+ Current Hour: 2
+ Time until next meal: 360.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 121.89, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.2179, Length: 12
+ Prepared Agent State for API: {"history":[[117.73337348428728,1.360399231412985],[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174],[120.20070887504956,0.4711717921862366],[120.73445852686305,0.5160670377434349],[121.29994069652194,1.394974555571866],[121.89165306747445,0.21792113100119354]],"hour":2,"meal":72}
+ Raw API Response: {"insulin_action_U_per_h":0.43254042767507245,"cgm":121.89165306747445,"reward":0.9977715795750535,"done":false,"info":{"sample_time":5,"meal":72.0,"remaining_time":72.0,"meal_type":0,"future_carb":0,"day_hour":24,"day_min":0}}
+ Parsed Action from Agent (U/h): 0.4325
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.4325 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 02:01		[RunIteration] Minute: 121, CGM: 122.01
+Sim Day 000, Time 02:02		[RunIteration] Minute: 122, CGM: 122.13
+Sim Day 000, Time 02:03		[RunIteration] Minute: 123, CGM: 122.26
+Sim Day 000, Time 02:04		[RunIteration] Minute: 124, CGM: 122.38
+Sim Day 000, Time 02:05		[RunIteration] Minute: 125, CGM: 122.50
+--- 5-Minute Interval Boundary (Minute: 125) ---
+ Current Hour: 2
+ Time until next meal: 355.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 122.50, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.4325, Length: 12
+ Prepared Agent State for API: {"history":[[117.8203259739442,0.33089956719444125],[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174],[120.20070887504956,0.4711717921862366],[120.73445852686305,0.5160670377434349],[121.29994069652194,1.394974555571866],[121.89165306747445,0.21792113100119354],[122.50447245636765,0.43254042767507245]],"hour":2,"meal":71}
+ Raw API Response: {"insulin_action_U_per_h":1.4940565685079457,"cgm":122.50447245636765,"reward":0.9974833057145335,"done":false,"info":{"sample_time":5,"meal":71.0,"remaining_time":71.0,"meal_type":0,"future_carb":0,"day_hour":25,"day_min":5}}
+ Parsed Action from Agent (U/h): 1.4941
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 1.4941 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 02:06		[RunIteration] Minute: 126, CGM: 122.63
+Sim Day 000, Time 02:07		[RunIteration] Minute: 127, CGM: 122.75
+Sim Day 000, Time 02:08		[RunIteration] Minute: 128, CGM: 122.88
+Sim Day 000, Time 02:09		[RunIteration] Minute: 129, CGM: 123.01
+Sim Day 000, Time 02:10		[RunIteration] Minute: 130, CGM: 123.13
+--- 5-Minute Interval Boundary (Minute: 130) ---
+ Current Hour: 2
+ Time until next meal: 350.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 123.13, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 1.4941, Length: 12
+ Prepared Agent State for API: {"history":[[117.9791555758364,1.6819918760461328],[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174],[120.20070887504956,0.4711717921862366],[120.73445852686305,0.5160670377434349],[121.29994069652194,1.394974555571866],[121.89165306747445,0.21792113100119354],[122.50447245636765,0.43254042767507245],[123.13468885107464,1.4940565685079457]],"hour":2,"meal":70}
+ Raw API Response: {"insulin_action_U_per_h":0.7540410350191797,"cgm":123.13468885107464,"reward":0.9971701761593815,"done":false,"info":{"sample_time":5,"meal":70.0,"remaining_time":70.0,"meal_type":0,"future_carb":0,"day_hour":26,"day_min":10}}
+ Parsed Action from Agent (U/h): 0.7540
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.7540 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 02:11		[RunIteration] Minute: 131, CGM: 123.26
+Sim Day 000, Time 02:12		[RunIteration] Minute: 132, CGM: 123.39
+Sim Day 000, Time 02:13		[RunIteration] Minute: 133, CGM: 123.52
+Sim Day 000, Time 02:14		[RunIteration] Minute: 134, CGM: 123.65
+Sim Day 000, Time 02:15		[RunIteration] Minute: 135, CGM: 123.78
+--- 5-Minute Interval Boundary (Minute: 135) ---
+ Current Hour: 2
+ Time until next meal: 345.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 123.78, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.7540, Length: 12
+ Prepared Agent State for API: {"history":[[118.2061602889665,1.4689049082120498],[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174],[120.20070887504956,0.4711717921862366],[120.73445852686305,0.5160670377434349],[121.29994069652194,1.394974555571866],[121.89165306747445,0.21792113100119354],[122.50447245636765,0.43254042767507245],[123.13468885107464,1.4940565685079457],[123.78025048111996,0.7540410350191797]],"hour":2,"meal":69}
+ Raw API Response: {"insulin_action_U_per_h":0.7804089260389825,"cgm":123.78025048111996,"reward":0.9968321652002321,"done":false,"info":{"sample_time":5,"meal":69.0,"remaining_time":69.0,"meal_type":0,"future_carb":0,"day_hour":27,"day_min":15}}
+ Parsed Action from Agent (U/h): 0.7804
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.7804 U/h.
+--- End of 5-Minute Interval Logic ---
+Sim Day 000, Time 02:16		[RunIteration] Minute: 136, CGM: 123.91
+Sim Day 000, Time 02:17		[RunIteration] Minute: 137, CGM: 124.04
+Sim Day 000, Time 02:18		[RunIteration] Minute: 138, CGM: 124.17
+Sim Day 000, Time 02:19		[RunIteration] Minute: 139, CGM: 124.31
+Sim Day 000, Time 02:20		[RunIteration] Minute: 140, CGM: 124.44
+--- 5-Minute Interval Boundary (Minute: 140) ---
+ Current Hour: 2
+ Time until next meal: 340.0 min
+ No upcoming meal info or meal announcements disabled.
+ Updated bgHistory (last 5min CGM): 124.44, Length: 12
+ Updated insulinActionHistory (previous 5min U/h): 0.7804, Length: 12
+ Prepared Agent State for API: {"history":[[118.49707858583301,0.44590593453907046],[118.84719622124163,0.19566402096451685],[119.25144005539812,2.572036214173295],[119.70446344408174,0.36766258896440174],[120.20070887504956,0.4711717921862366],[120.73445852686305,0.5160670377434349],[121.29994069652194,1.394974555571866],[121.89165306747445,0.21792113100119354],[122.50447245636765,0.43254042767507245],[123.13468885107464,1.4940565685079457],[123.78025048111996,0.7540410350191797],[124.43965513826844,0.7804089260389825]],"hour":2,"meal":68}
+ Raw API Response: {"insulin_action_U_per_h":0.4598400903290166,"cgm":124.43965513826844,"reward":0.9964691603926729,"done":false,"info":{"sample_time":5,"meal":68.0,"remaining_time":68.0,"meal_type":0,"future_carb":0,"day_hour":28,"day_min":20}}
+ Parsed Action from Agent (U/h): 0.4598
+ Set current_rate_for_minute_application_U_per_H for next 5 mins to: 0.4598 U/h.
+--- End of 5-Minute Interval Logic ---

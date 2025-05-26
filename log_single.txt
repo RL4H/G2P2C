@@ -1,1 +1,2 @@
 17:38:50  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:17:33  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml

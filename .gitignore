@@ -5,6 +5,6 @@ __pycache__/
 experiments/nci/
 .env
 experiments/nci/help.txt
-result/
-result_ppo/
+results/
+results_ppo/
 experiments/results
