@@ -54,8 +54,8 @@ class Worker:
         self.reinit_flag, cur_cgm = False, 0
         for t in range(0, self.calibration):  # open-loop simulation for calibration period.
             state, reward, is_done, info = self.env.step(self.std_basal)
-            cur_cgm = state.observation.CGM
-            self.cur_state, self.feat = self.state_space.update(cgm=state.observation.CGM, ins=self.std_basal,
+            cur_cgm = state.CGM
+            self.cur_state, self.feat = self.state_space.update(cgm=cur_cgm, ins=self.std_basal,
                                                                 meal=info['remaining_time'], hour=self.counter,
                                                                 meal_type=info['meal_type'])  # info['day_hour']
             self.reinit_flag = True if info['meal_type'] != 0 else False  # meal_type zero -> no meal
@@ -79,7 +79,7 @@ class Worker:
             rl_action, pump_action = self.pump.action(agent_action=selected_action,
                                                       prev_state=self.init_state, prev_info=None)
             state, _reward, is_done, info = self.env.step(pump_action)
-            cur_cgm = state.observation.CGM
+            cur_cgm = state.CGM
             reward = composite_reward(self.args, state=cur_cgm, reward=_reward)
             self.bgp_buffer.update(policy_step['a_cgm'], policy_step['c_cgm'], cur_cgm)
             # calulate the horison pred error rmse
