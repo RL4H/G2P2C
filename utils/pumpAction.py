@@ -26,11 +26,17 @@ class Pump:
         BW = params.BW.values.item()
         self.basal = u2ss * BW / 6000
 
+    def _get_cgm(self, step_or_obs):
+        """Step 혹은 Observation 객체에서 CGM 값을 추출한다."""
+        if hasattr(step_or_obs, "observation"):
+            return step_or_obs.observation.CGM
+        return step_or_obs.CGM
+
     def calibrate(self, init_state):
         self.init_state = init_state
         if self.use_bolus:
             self.expert = BasalBolusController(self.args, patient_name=self.patient_name, use_bolus=self.use_bolus, use_cf=self.use_cf)
-            self.bolus = self.expert.get_bolus(meal=0, glucose=self.init_state.CGM)
+            self.bolus = self.expert.get_bolus(meal=0, glucose=self._get_cgm(self.init_state))
         else:
             self.bolus = 0
 
@@ -45,7 +51,7 @@ class Pump:
             bolus_carbs = info['future_carb']
         else:
             bolus_carbs = 0
-        self.bolus = self.expert.get_bolus(meal=bolus_carbs, glucose=state.CGM)
+        self.bolus = self.expert.get_bolus(meal=bolus_carbs, glucose=self._get_cgm(state))
 
     def action(self, agent_action=None, prev_state=None, prev_info=None):
         if self.use_bolus:
