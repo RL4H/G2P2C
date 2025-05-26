@@ -15,7 +15,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from utils.pumpAction import Pump
 
 
 # --- 프로젝트 루트 경로 설정 및 sys.path 추가 ---

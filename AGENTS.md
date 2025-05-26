@@ -15,7 +15,6 @@ previous discussions.
   - `RL_Agent_Plugin_v1.0.js`: DMMS.R plugin that queries the server for insulin
     actions.
   - `run_dmms_cli.py`: example script showing how to start DMMS.R from Python.
-- `results/` – log files written by the server during interaction with DMMS.R.
 
 ## 강화 학습 구축을 위한 구체적·검증 가능한 단계
 
@@ -60,27 +59,6 @@ experiments/run_RL_agent.py의 설정 로직을 참고하여 G2P2C 또는 PPO �
 results/dmms_realtime_logs_v2에 남는 CSV 로그를 활용해 실제 DMMS.R 시뮬레이션과 Python 서버 간의 상호작용을 확인한다.
 각 에피소드의 성공 여부, reward 변화 등을 기록하여 학습이 정상적으로 진행되는지 모니터링한다.
 이렇게 하면 이미 검증된 Simglucose 기반 학습 코드를 최대한 재활용하면서, 외부 시뮬레이터 DMMS.R과 상호작용하는 강화학습 환경을 구축할 수 있다. 필요한 부분(플러그인 수정, FastAPI 확장, 환경 래퍼 작성)을 차근차근 구현한 뒤 로그를 통해 동작을 확인하면 된다.
-
-## 현재까지 진행 상황 요약
-
-- **1단계: 시뮬레이터 제어 스크립트 작성**  
-  `run_dmms_cli.py`를 통해 DMMS.R을 CLI로 실행하고, 완료 후 결과 CSV를 읽어 로그를 확보하였다.
-- **2단계: JavaScript 플러그인 확장**  
-  `RL_Agent_Plugin_v1.0.js`가 매 5분마다 서버의 `/env_step`으로 상태를 전송하고 시뮬레이션 종료 시 `/episode_end`로 알리도록 수정하였다.
-- **3단계: FastAPI 서버 기능 확장**  
-  `main.py`에서 경험 버퍼와 에피소드 변수를 초기화하고, `/env_step`과 `/episode_end`에서 보상 계산과 버퍼 저장을 처리한다. 기본 동작은 구현되었으며 추가 테스트를 진행 중이다.
-- **테스트 환경 개선**
-  테스트 파일의 모듈 임포트를 절대경로로 수정하고 `httpx` 의존성을 추가하여 `pytest`를 실행할 수 있게 했다.
-
-- **4단계: Gym 환경 래퍼 구현 및 통합**
-  `Sim_CLI/dmms_env.py`에 `DmmsEnv` 클래스를 새로 작성하여 DMMS.R 프로세스를 시작하고
-  `/get_state`, `/env_step` API를 통해 상태와 보상을 주고받도록 했다.
-  FastAPI 서버(`main.py`)에는 `/get_state` 엔드포인트를 추가하였다.
-  `utils.options`에 `--sim dmms` 옵션과 DMMS 경로 인자를 신설하고,
-  `utils.core.get_env()`가 이 옵션에 따라 `DmmsEnv`를 반환하도록 수정하였다.
-  학습 스크립트(`experiments/run_RL_agent.py`)는 DMMS 모드일 때 결과 폴더를 생성하도록 `setup_dmms_dirs`를 호출한다.
-
-앞으로 DMMS.R과 연동하는 Gym 환경 클래스와 학습 루프 통합 작업을 진행할 예정이다.
 
 ## RL training with DMMS.R
 
@@ -145,4 +123,20 @@ except CalledProcessError as e:
 - Added check in `environments/simglucose/simglucose/__init__.py` to skip Gym environment registration if Gym is not installed or if `simglucose-v0` is already registered. This prevents errors like `gym.error.Error: Cannot re-register id: simglucose-v0` when running the FastAPI server.
 - `Sim_CLI/main.py` now returns an extended step response (`StepResponse`) containing `cgm`, `reward`, `done`, and `info` fields in addition to `insulin_action_U_per_h`. This helps `DmmsEnv` interact with the API like a Gym environment.
 - `DmmsEnv` tracks the latest CGM value and updates it after each step. The environment also uses `args.dmms_io_root` from `utils.core.get_env()` so results are saved under `results/dmms_runs`.
+- `uvicorn Sim_CLI.main:app --host 127.0.0.1 --port 500` 항상 이 코드를 사용해서 서버를 열고, 이 서버와 통신을 함.
+- `python Sim_CLI/run_dmms_cli.py "C:\Program Files\The Epsilon Group\DMMS.R\simulator\DMMS.R.exe" "C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml" "log_single.txt" "\results_test" ` 이 코드를 통해서 터미널에서 DMMS.R 시뮬레이터를 항상 구동함.
+  - 두 개의 디버깅 결과 제시됨.
+    - -----------------------------
+      DEBUG: Model raw output: -0.2924, Scaled action: 1.5524, Clipped action: 1.5524
+      INFO:     127.0.0.1:59741 - "POST /env_step HTTP/1.1" 200 OK
+      INFO:     [LOG_MAIN_REQUEST_START] Call #287. Received /env_step. Body: {"history": [[129.9519295262746, 0.9567926079980968], [127.74815449501149, 1.069693769968829], [125.56159826953449, 1.6721291921683878], [123.4038636966688, 1.3690522510255796], [121.2850768399388, 2.5691536979178764], [119.21212366038587, 0.44198040672057415], [117.18737828145304, 3.563908304074195], [115.20990995252951, 3.278973343266496], [113.27440556262681, 1.4103845310824195], [111.36806162494409, 1.8585728015680467], [109.47351483387143, 4.181181316271177], [107.57309510765505, 1.5523959585057883]], "meal": -287.0}
+    - (venv_3.10) PS C:\Users\user\Desktop\G2P2C> python Sim_CLI/run_dmms_cli.py "C:\Program Files\The Epsilon Group\DMMS.R\simulator\DMMS.R.exe" "C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml" "log_single.txt" "\results_test" 
+      Running: C:\Program Files\The Epsilon Group\DMMS.R\simulator\DMMS.R.exe C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml log_single.txt \results_test
+      Generated CSV files:
+      - \results_test\signalHistory.Type1 Adult.adult#001.csv
+      - \results_test\signalHistory.Type2 Adult.adult#001.csv
+      - \results_test\survivalInfo.csv
+      Loaded \results_test\signalHistory.Type1 Adult.adult#001.csv with 1441 rows
+- 위 두 개의 코드와 연관된 코드는 모두 문제가 없음
+- 주로 작업은 Sim_CLI에서 수행하고, 수정도 주로 이 폴더 안에 있는 코드에서 수행함. 
 
