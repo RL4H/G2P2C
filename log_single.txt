@@ -1,2 +1,14 @@
 17:38:50  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
 18:17:33  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:24:06  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:37:18  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:16  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:46  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:48  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:48  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:49  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:50  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:50  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:51  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:52  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
+18:47:54  Running simulation for configuration:  C:\Users\user\Documents\DMMS.R\config\Sim_CLI_1.2.xml
