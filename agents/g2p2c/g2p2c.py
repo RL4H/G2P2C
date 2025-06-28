@@ -390,8 +390,16 @@ class G2P2C:
             param_group['lr'] = self.vf_lr
 
     def run(self, args, patients, env_ids, seed):
-        MAX_INTERACTIONS = 4000 if args.debug == 1 else 800000
-        LR_DECAY_INTERACTIONS = 2000 if args.debug == 1 else 600000
+        # For extended training, allow more interactions based on n_training_episodes
+        if hasattr(args, 'extended_episodes') and args.extended_episodes:
+            # Calculate interactions needed: episodes * workers * n_step
+            needed_interactions = args.extended_episodes * args.n_training_workers * args.n_step
+            MAX_INTERACTIONS = needed_interactions + 100000  # Add buffer
+            LR_DECAY_INTERACTIONS = max(needed_interactions // 2, 100000)
+            print(f"INFO: Extended training mode - MAX_INTERACTIONS set to {MAX_INTERACTIONS}")
+        else:
+            MAX_INTERACTIONS = 2 if args.debug == 1 else 800000
+            LR_DECAY_INTERACTIONS = 1 if args.debug == 1 else 600000
         experiment_done, job_status, last_lr_update = False, 1, 0
         stop_criteria_len, stop_criteria_threshold = 10, 5
         ri_arr = np.ones(stop_criteria_len, dtype=np.float32) * 1000
@@ -407,7 +415,10 @@ class G2P2C:
         testing_agents = [Worker(testing_args, 'testing', patients, env_ids, i+5000, i+5000, self.device) for i in range(self.n_testing_workers)]
 
         # ppo learning
-        for rollout in range(0, 30000):  # steps * n_workers * epochs
+        max_episodes = getattr(args, 'n_training_episodes', 30000)
+        save_freq = getattr(args, 'save_freq', 100)
+        print(f"INFO: Starting training for {max_episodes} episodes (save every {save_freq} episodes)")
+        for rollout in range(0, max_episodes):  # steps * n_workers * epochs
             t1 = time.time()
             rmse, horizon_rmse = 0, 0
             for i in range(self.n_training_workers):
@@ -430,7 +441,12 @@ class G2P2C:
 
             t3 = time.time()
             self.update(rollout)
-            self.policy.save(rollout)
+            
+            # Save checkpoints based on save_freq
+            if rollout == 0 or (rollout + 1) % save_freq == 0 or rollout == max_episodes - 1:
+                print(f"INFO: Saving checkpoint at episode {rollout}")
+                self.policy.save(rollout)
+            
             t4 = time.time()
 
             t5 = time.time()
@@ -464,9 +480,10 @@ class G2P2C:
 
             if experiment_done:
                 print('################## starting the validation trials #######################')
-                n_val_trials = 3 if args.debug == 1 else 500
+                n_val_trials = 1 if args.debug == 1 else 500
                 validation_agents = [Worker(testing_args, 'testing', patients, env_ids, i + 6000, i + 6000, self.device) for i in range(n_val_trials)]
                 for i in range(n_val_trials):
                     res, _, _ = validation_agents[i].rollout(self.policy)
                 print('Algo RAN Successfully')
+                print(f"INFO: [G2P2C.run] Final value of self.completed_interactions: {self.completed_interactions}") # 로그 추가
                 exit()

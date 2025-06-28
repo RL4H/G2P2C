@@ -164,7 +164,8 @@ class ValueModule(nn.Module):
 class ActorNetwork(nn.Module):
     def __init__(self, args, device):
         super(ActorNetwork, self).__init__()
-        self.device = device
+        # self.device = device
+        self.device = torch.device('cpu')
         self.args = args
         self.FeatureExtractor = FeatureExtractor(args)
         self.GlucoseModel = GlucoseModel(args, self.device)
@@ -242,6 +243,8 @@ class ActorNetwork(nn.Module):
 
     def horizon_error(self, s, feat, actions, real_glucose, mode):
         horizon_error = 0
+        print(self.device)
+        self.device = torch.device('cpu')
         s = torch.as_tensor(s, dtype=torch.float32, device=self.device)
         feat = torch.as_tensor(feat, dtype=torch.float32, device=self.device)
         for i in range(0, len(actions)):
@@ -260,6 +263,7 @@ class ActorNetwork(nn.Module):
 class CriticNetwork(nn.Module):
     def __init__(self, args, device):
         super(CriticNetwork, self).__init__()
+        device = torch.device('cpu')
         self.FeatureExtractor = FeatureExtractor(args)
         self.ValueModule = ValueModule(args, device)
         self.aux_mode = args.aux_mode
@@ -278,7 +282,8 @@ class CriticNetwork(nn.Module):
 class ActorCritic(nn.Module):
     def __init__(self, args, load, actor_path, critic_path, device):
         super(ActorCritic, self).__init__()
-        self.device = device
+        # self.device = device
+        self.device = torch.device('cpu')
         self.experiment_dir = args.experiment_dir
         self.Actor = ActorNetwork(args, device)
         self.Critic = CriticNetwork(args, device)

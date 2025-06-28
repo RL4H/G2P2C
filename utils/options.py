@@ -36,6 +36,8 @@ class Options:
         self.parser.add_argument('--dmms_cfg', type=str, default='', help='Path to DMMS.R config XML')
         self.parser.add_argument('--dmms_server', type=str, default='http://127.0.0.1:5000',
                                  help='DMMS environment FastAPI server URL')
+        self.parser.add_argument('--dmms_debug_mode', action='store_true', 
+                                 help='Use debug hyperparameters optimized for DMMS.R single scenario')
 
         # for training: # ideal benchmark adult and adolescent doesnt have snacks though => set prob '-1' to remove
         self.parser.add_argument('--meal_prob', type=list, default=[0.95, -1, 0.95, -1, 0.95, -1], help='')
@@ -75,6 +77,7 @@ class Options:
         self.parser.add_argument('--feature_history', type=int, default=48, help='')
         self.parser.add_argument('--calibration', type=int, default=48, help='should be same as feature_hist')
         self.parser.add_argument('--max_epi_length', type=int, default=2000, help='')  # 30days, 5 min, 8640
+        self.parser.add_argument('--n_training_episodes', type=int, default=30000, help='Number of training episodes/rollouts')
         self.parser.add_argument('--n_action', type=int, default=1, help='number of control actions')
         self.parser.add_argument('--n_hidden', type=int, default=12, help='hidden units in lstm')
         self.parser.add_argument('--n_rnn_layers', type=int, default=2, help='layers in the lstm')
@@ -157,7 +160,7 @@ class Options:
         self.parser.add_argument('--target_action_std', type=float, default=0.2, help='Target action noise level for TD3')
         self.parser.add_argument('--target_action_lim', type=float, default=0.5, help='Target action noise limit for TD3')
 
-
+        self.parser.add_argument('--fine_tune_from_checkpoint', type=int, default=195, help='fine-tuning checkpoint - from')
 
 
         # self.parser.add_argument('--pi_lr', type=float, default=1e-4 * 3, help='Policy learning rate')

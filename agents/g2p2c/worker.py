@@ -120,6 +120,40 @@ class Worker:
                 self.save_log([[self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
                                 hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse]],
                               '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
+                
+                # === 행동 통계 로깅 추가 시작 ===
+                actions_this_episode = df['rl_ins'].to_numpy() # 'rl_ins' 컬럼 사용 (에이전트의 최종 RL 행동)
+                action_mean = np.mean(actions_this_episode) if len(actions_this_episode) > 0 else np.nan
+                action_std = np.std(actions_this_episode) if len(actions_this_episode) > 0 else np.nan
+                action_min = np.min(actions_this_episode) if len(actions_this_episode) > 0 else np.nan
+                action_max = np.max(actions_this_episode) if len(actions_this_episode) > 0 else np.nan
+
+                print(f"DEBUG: [Worker {self.worker_id}, Epi {self.episode}] Action Stats: Mean={action_mean:.3f}, Std={action_std:.3f}, Min={action_min:.3f}, Max={action_max:.3f}")
+
+                # 기존 요약 로그에 행동 통계 추가 (log2_columns 및 save_log 호출 수정 필요)
+                # 예: self.log2_columns에 'action_mean', 'action_std', 'action_min', 'action_max' 추가
+                # self.save_log 호출 시 해당 값들 전달
+                # current_summary_data = [self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
+                #                         hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse,
+                #                         action_mean, action_std, action_min, action_max] # 예시
+                # self.save_log([current_summary_data], 
+                #               '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
+                # === 행동 통계 로깅 추가 끝 ===
+
+                # 기존 save_log 호출은 위에서 행동 통계를 포함하여 한 번만 하도록 수정하거나,
+                # 혹은 행동 통계는 별도의 로그 파일/방식으로 기록
+                if not np.isnan(action_mean): # 행동 통계가 유효할 때만 기존 로그에 추가한다고 가정
+                     self.save_log([[self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
+                                   hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse,
+                                   action_mean, action_std, action_min, action_max]], # 새 컬럼 추가
+                                 '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
+                     # self.log2_columns도 이에 맞게 수정 필요:
+                     # self.log2_columns = ['epi', 't', ..., 'cBGP_rmse', 'act_mean', 'act_std', 'act_min', 'act_max']
+                else: # 행동 통계가 NaN이면 기존 방식대로 로그 (컬럼 수 불일치 방지)
+                     self.save_log([[self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
+                                   hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse]],
+                                 '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
+
 
                 if self.worker_mode == 'training':
                     self.init_env()

@@ -87,7 +87,9 @@ async def lifespan(app: FastAPI):
     
     try:
         print("INFO:     [LIFESPAN_LOAD_AGENT_START] Loading G2P2C agent...")
-        loaded_g2p2c_agent = load_agent(device=torch.device("cpu"), episode=195)
+        loaded_g2p2c_agent = load_agent(device=torch.device("cpu"), episode=195, mode="base")
+        # loaded_g2p2c_agent = load_agent(device=torch.device("cpu"), episode=59, mode="finetuned", experiment_folder_name="multi_scenario_adult7_100ep_20250608_064759")
+        # loaded_g2p2c_agent = load_agent(device=torch.device("cpu"), episode=59, mode="finetuned", experiment_folder_name="extended_dmms_100ep_20250607_183216")
         app_state["agent"] = loaded_g2p2c_agent
         print("INFO:     [LIFESPAN_LOAD_AGENT_END] G2P2C Agent loaded successfully.")
 
@@ -196,7 +198,7 @@ def _handle_env_step(req: StateRequest, endpoint_name: str) -> StepResponse:
         )
 
 
-        # action_U_per_h *= 0
+        action_U_per_h *= 0
 
         current_state_dict = {
             "state_hist": processed_state_hist_np.tolist(),
