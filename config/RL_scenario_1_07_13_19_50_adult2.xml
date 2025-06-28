@@ -1,0 +1,125 @@
+<forceAllSubjInitialBg>false</forceAllSubjInitialBg>
+<allSubjInitialBg>120</allSubjInitialBg>
+<simName>RL_scenario_1_07_13_19_50_adult2</simName>
+<humanModel/>
+<subjects>
+	<subject>
+		<population>Type1 Adult</population>
+		<name>adult#002</name>
+	</subject>
+</subjects>
+<insulins>
+	<insulin>
+		<slowRelease>false</slowRelease>
+		<basalChannelUse>false</basalChannelUse>
+		<bioavailability>0.66</bioavailability>
+		<name>PPO_Agent_Insulin</name>
+		<insulinAnalogName>normal</insulinAnalogName>
+		<releaseName>Standard Long Acting</releaseName>
+	</insulin>
+</insulins>
+<feedbackControl>
+	<sensors>
+		<sensor type="IdealCgmSensor" name="-" outSignalNames="CGMBG-"/>
+	</sensors>
+	<controlElements>
+		<control type="PluginControlElement" name="-" inSignalNames="CGMBG-">
+			<pluginFileGivenRelToConfigDir>true</pluginFileGivenRelToConfigDir>
+			<scriptFilename>../../../Desktop/G2P2C/Sim_CLI/RL_Agent_Plugin_v1.0.js</scriptFilename>
+		</control>
+		<control type="MealProvider" name="-" inSignalNames="">
+			<meal>
+				<isSnack>false</isSnack>
+				<isHighFat>false</isHighFat>
+				<weekOfSim>-1</weekOfSim>
+				<weekRelevance>0</weekRelevance>
+				<startMinutesPastMidnight>420</startMinutesPastMidnight>
+				<carbAmountInGrams>50</carbAmountInGrams>
+				<snackAmountInGrams>0</snackAmountInGrams>
+				<durationInMinutes>15</durationInMinutes>
+				<mealBolusMultiplier>1</mealBolusMultiplier>
+				<weekdayOrDays>
+					<daysSinceMonday>7</daysSinceMonday>
+					<daySet>0</daySet>
+					<allButDaySet>7</allButDaySet>
+				</weekdayOrDays>
+			</meal>
+			<meal>
+				<isSnack>false</isSnack>
+				<isHighFat>false</isHighFat>
+				<weekOfSim>-1</weekOfSim>
+				<weekRelevance>0</weekRelevance>
+				<startMinutesPastMidnight>780</startMinutesPastMidnight>
+				<carbAmountInGrams>50</carbAmountInGrams>
+				<snackAmountInGrams>0</snackAmountInGrams>
+				<durationInMinutes>15</durationInMinutes>
+				<mealBolusMultiplier>1</mealBolusMultiplier>
+				<weekdayOrDays>
+					<daysSinceMonday>7</daysSinceMonday>
+					<daySet>0</daySet>
+					<allButDaySet>7</allButDaySet>
+				</weekdayOrDays>
+			</meal>
+			<meal>
+				<isSnack>false</isSnack>
+				<isHighFat>false</isHighFat>
+				<weekOfSim>-1</weekOfSim>
+				<weekRelevance>0</weekRelevance>
+				<startMinutesPastMidnight>1140</startMinutesPastMidnight>
+				<carbAmountInGrams>50</carbAmountInGrams>
+				<snackAmountInGrams>0</snackAmountInGrams>
+				<durationInMinutes>15</durationInMinutes>
+				<mealBolusMultiplier>1</mealBolusMultiplier>
+				<weekdayOrDays>
+					<daysSinceMonday>7</daysSinceMonday>
+					<daySet>0</daySet>
+					<allButDaySet>7</allButDaySet>
+				</weekdayOrDays>
+			</meal>
+		</control>
+	</controlElements>
+	<deliveryElements>
+		<delivery type="IdealPump" name="-"/>
+	</deliveryElements>
+</feedbackControl>
+<simTimeSpan>
+	<runDurationMin>1440</runDurationMin>
+	<simStartMinPastMidnight>0</simStartMinPastMidnight>
+	<simStartDaysSinceJan1>0</simStartDaysSinceJan1>
+	<simStartDayOfWeek>
+		<daysSinceMonday>0</daysSinceMonday>
+		<daySet>3</daySet>
+		<allButDaySet>7</allButDaySet>
+	</simStartDayOfWeek>
+</simTimeSpan>
+<randConfig>
+	<useUniversalRandomSeed>true</useUniversalRandomSeed>
+	<makeUniversalSeedSubjectSpecific>true</makeUniversalSeedSubjectSpecific>
+	<universalRandomSeed>0</universalRandomSeed>
+</randConfig>
+<drugPkPdControl>
+	<drugs/>
+</drugPkPdControl>
+<humanModelOptions>
+	<enableCircadianEffect>true</enableCircadianEffect>
+</humanModelOptions>
+<fileOptions>
+	<enableCustomSignalExport>false</enableCustomSignalExport>
+	<showRelativePathForSignalListLocation>true</showRelativePathForSignalListLocation>
+	<generateSignalHistoryCsv>true</generateSignalHistoryCsv>
+	<signalListLocation/>
+	<customSignalOutputOptionsConfig>
+		<enableMatlabExport>true</enableMatlabExport>
+	</customSignalOutputOptionsConfig>
+</fileOptions>
+<initAndFinalStateConfig>
+	<loadInitialStateFromFile>false</loadInitialStateFromFile>
+	<initialStateLocationRelative>true</initialStateLocationRelative>
+	<saveFinalStateToFile>false</saveFinalStateToFile>
+	<finalStateLocationRelative>true</finalStateLocationRelative>
+	<forceAllSubjInitialBg>false</forceAllSubjInitialBg>
+	<allSubjInitialBg>120</allSubjInitialBg>
+	<initialStateFileLocation/>
+	<finalStateFileLocation/>
+</initAndFinalStateConfig>
+

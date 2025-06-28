@@ -1,5 +1,6 @@
 import argparse
 from decouple import config
+import sys
 MAIN_PATH = config('MAIN_PATH')
 
 
@@ -28,6 +29,15 @@ class Options:
                                  help='patient_id = [adolescent child adults] hence 0 - 9 indexes adolescents likewise')
         self.parser.add_argument('--sensor', type=str, default='GuardianRT', help='Dexcom, GuardianRT, Navigator')
         self.parser.add_argument('--pump', type=str, default='Insulet', help='Insulet, Cozmo')
+        # simulator backend
+        self.parser.add_argument('--sim', type=str, default='simglucose', choices=['simglucose', 'dmms'],
+                                 help='Simulation environment: simglucose or dmms')
+        self.parser.add_argument('--dmms_exe', type=str, default='', help='Path to DMMS.R executable')
+        self.parser.add_argument('--dmms_cfg', type=str, default='', help='Path to DMMS.R config XML')
+        self.parser.add_argument('--dmms_server', type=str, default='http://127.0.0.1:5000',
+                                 help='DMMS environment FastAPI server URL')
+        self.parser.add_argument('--dmms_debug_mode', action='store_true', 
+                                 help='Use debug hyperparameters optimized for DMMS.R single scenario')
 
         # for training: # ideal benchmark adult and adolescent doesnt have snacks though => set prob '-1' to remove
         self.parser.add_argument('--meal_prob', type=list, default=[0.95, -1, 0.95, -1, 0.95, -1], help='')
@@ -67,6 +77,7 @@ class Options:
         self.parser.add_argument('--feature_history', type=int, default=48, help='')
         self.parser.add_argument('--calibration', type=int, default=48, help='should be same as feature_hist')
         self.parser.add_argument('--max_epi_length', type=int, default=2000, help='')  # 30days, 5 min, 8640
+        self.parser.add_argument('--n_training_episodes', type=int, default=30000, help='Number of training episodes/rollouts')
         self.parser.add_argument('--n_action', type=int, default=1, help='number of control actions')
         self.parser.add_argument('--n_hidden', type=int, default=12, help='hidden units in lstm')
         self.parser.add_argument('--n_rnn_layers', type=int, default=2, help='layers in the lstm')
@@ -149,7 +160,7 @@ class Options:
         self.parser.add_argument('--target_action_std', type=float, default=0.2, help='Target action noise level for TD3')
         self.parser.add_argument('--target_action_lim', type=float, default=0.5, help='Target action noise limit for TD3')
 
-
+        self.parser.add_argument('--fine_tune_from_checkpoint', type=int, default=195, help='fine-tuning checkpoint - from')
 
 
         # self.parser.add_argument('--pi_lr', type=float, default=1e-4 * 3, help='Policy learning rate')
@@ -175,9 +186,21 @@ class Options:
         # Elena paper meal: Breakfast 30-60g, Lunch 70-100g, Dinner 70-110g, Snack 20-40g
         # June9 exp run: Breakfast 45 (10), Lunch 100 (10, Dinner 90 (1), Snack 10(5)
 
-    def parse(self):
+
+    # parse 메소드 시그니처 변경: args_list=None 추가
+    def parse(self, args_list=None):
         self._initial()
-        self.opt = self.parser.parse_args()
+
+        # args_list가 명시적으로 주어졌는지 확인
+        if args_list is not None:
+            # 주어졌다면 (빈 리스트 포함), 해당 리스트로 파싱
+            args_to_parse = args_list
+        else:
+            # 주어지지 않았다면 (기본값 None), 기존처럼 sys.argv 사용
+            # (주의: 이 경우에도 pytest 등 다른 환경 고려가 필요하다면 추가 조건 가능)
+            args_to_parse = sys.argv[1:]
+
+        self.opt = self.parser.parse_args(args_to_parse) # 결정된 인자 리스트로 파싱
         Options.validate_args(self.opt)
         return self.opt
 

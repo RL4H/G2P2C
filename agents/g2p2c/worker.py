@@ -45,7 +45,8 @@ class Worker:
             self.episode += 1
         self.counter = 0
         self.init_state = self.env.reset()
-        self.cur_state, self.feat = self.state_space.update(cgm=self.init_state.CGM, ins=0, meal=0)
+        init_cgm = self.init_state.observation.CGM
+        self.cur_state, self.feat = self.state_space.update(cgm=init_cgm, ins=0, meal=0)
         self.pump.calibrate(self.init_state)
         self.calibration_process()
 
@@ -54,7 +55,7 @@ class Worker:
         for t in range(0, self.calibration):  # open-loop simulation for calibration period.
             state, reward, is_done, info = self.env.step(self.std_basal)
             cur_cgm = state.CGM
-            self.cur_state, self.feat = self.state_space.update(cgm=state.CGM, ins=self.std_basal,
+            self.cur_state, self.feat = self.state_space.update(cgm=cur_cgm, ins=self.std_basal,
                                                                 meal=info['remaining_time'], hour=self.counter,
                                                                 meal_type=info['meal_type'])  # info['day_hour']
             self.reinit_flag = True if info['meal_type'] != 0 else False  # meal_type zero -> no meal
@@ -78,31 +79,32 @@ class Worker:
             rl_action, pump_action = self.pump.action(agent_action=selected_action,
                                                       prev_state=self.init_state, prev_info=None)
             state, _reward, is_done, info = self.env.step(pump_action)
-            reward = composite_reward(self.args, state=state.CGM, reward=_reward)
-            self.bgp_buffer.update(policy_step['a_cgm'], policy_step['c_cgm'], state.CGM)
+            cur_cgm = state.CGM
+            reward = composite_reward(self.args, state=cur_cgm, reward=_reward)
+            self.bgp_buffer.update(policy_step['a_cgm'], policy_step['c_cgm'], cur_cgm)
             # calulate the horison pred error rmse
             horizon_calc_done, err = self.CGPredHorizon.update(self.cur_state, self.feat, policy_step['action'][0],
-                                                               state.CGM, policy)
+                                                               cur_cgm, policy)
             if horizon_calc_done:
                 a_horizonBG_rmse += err[0]
                 horizon_rmse_count += 1
 
             if self.worker_mode == 'training':   # store -> rollout for training
-                scaled_cgm = linear_scaling(x=state.CGM, x_min=self.args.glucose_min, x_max=self.args.glucose_max)
+                scaled_cgm = linear_scaling(x=cur_cgm, x_min=self.args.glucose_min, x_max=self.args.glucose_max)
                 self.memory.store(self.cur_state, self.feat, policy_step['action'][0],
                                   reward, policy_step['state_value'], policy_step['log_prob'], scaled_cgm, self.counter)
             # update -> state.
-            self.cur_state, self.feat = self.state_space.update(cgm=state.CGM, ins=pump_action,
+            self.cur_state, self.feat = self.state_space.update(cgm=cur_cgm, ins=pump_action,
                                                                 meal=info['remaining_time'], hour=(self.counter+1),
                                                                 meal_type=info['meal_type'], carbs=info['future_carb']) #info['day_hour']
-            self.episode_history[self.counter] = [self.episode, self.counter, state.CGM, info['meal'] * info['sample_time'],
+            self.episode_history[self.counter] = [self.episode, self.counter, cur_cgm, info['meal'] * info['sample_time'],
                                                   pump_action, reward, rl_action, policy_step['mu'][0], policy_step['std'][0],
                                                   policy_step['log_prob'][0], policy_step['state_value'][0], info['day_hour'],
                                                   info['day_min']]
             self.counter += 1
             stop_factor = (self.max_epi_length - 1) if self.worker_mode == 'training' else (self.max_test_epi_len - 1)
 
-            criteria = state.CGM <= 40 or state.CGM >= 600 or self.counter > stop_factor
+            criteria = cur_cgm <= 40 or cur_cgm >= 600 or self.counter > stop_factor
             if criteria:  # episode termination criteria.
                 if self.worker_mode == 'training':
                     final_val = policy.get_final_value(self.cur_state, self.feat)
@@ -118,6 +120,40 @@ class Worker:
                 self.save_log([[self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
                                 hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse]],
                               '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
+                
+                # === 행동 통계 로깅 추가 시작 ===
+                actions_this_episode = df['rl_ins'].to_numpy() # 'rl_ins' 컬럼 사용 (에이전트의 최종 RL 행동)
+                action_mean = np.mean(actions_this_episode) if len(actions_this_episode) > 0 else np.nan
+                action_std = np.std(actions_this_episode) if len(actions_this_episode) > 0 else np.nan
+                action_min = np.min(actions_this_episode) if len(actions_this_episode) > 0 else np.nan
+                action_max = np.max(actions_this_episode) if len(actions_this_episode) > 0 else np.nan
+
+                print(f"DEBUG: [Worker {self.worker_id}, Epi {self.episode}] Action Stats: Mean={action_mean:.3f}, Std={action_std:.3f}, Min={action_min:.3f}, Max={action_max:.3f}")
+
+                # 기존 요약 로그에 행동 통계 추가 (log2_columns 및 save_log 호출 수정 필요)
+                # 예: self.log2_columns에 'action_mean', 'action_std', 'action_min', 'action_max' 추가
+                # self.save_log 호출 시 해당 값들 전달
+                # current_summary_data = [self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
+                #                         hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse,
+                #                         action_mean, action_std, action_min, action_max] # 예시
+                # self.save_log([current_summary_data], 
+                #               '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
+                # === 행동 통계 로깅 추가 끝 ===
+
+                # 기존 save_log 호출은 위에서 행동 통계를 포함하여 한 번만 하도록 수정하거나,
+                # 혹은 행동 통계는 별도의 로그 파일/방식으로 기록
+                if not np.isnan(action_mean): # 행동 통계가 유효할 때만 기존 로그에 추가한다고 가정
+                     self.save_log([[self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
+                                   hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse,
+                                   action_mean, action_std, action_min, action_max]], # 새 컬럼 추가
+                                 '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
+                     # self.log2_columns도 이에 맞게 수정 필요:
+                     # self.log2_columns = ['epi', 't', ..., 'cBGP_rmse', 'act_mean', 'act_std', 'act_min', 'act_max']
+                else: # 행동 통계가 NaN이면 기존 방식대로 로그 (컬럼 수 불일치 방지)
+                     self.save_log([[self.episode, self.counter, df['rew'].sum(), normo, hypo, sev_hypo, hyper, lgbi,
+                                   hgbi, ri, sev_hyper, aBGpred_rmse, cBGpred_rmse]],
+                                 '/' + self.worker_mode + '/data/' + self.worker_mode + '_episode_summary_')
+
 
                 if self.worker_mode == 'training':
                     self.init_env()
